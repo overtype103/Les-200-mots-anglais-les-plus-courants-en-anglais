@@ -1,0 +1,1421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Quiz</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    body{min-height:100vh;color:#f5f5f5;background:#050816;overflow-y:auto;overflow-x:hidden;position:relative}
+    body::before{content:"";position:fixed;inset:0;background-image:url("background.png");background-size:cover;background-position:center;opacity:1;z-index:-2;animation:bgMove 40s ease-in-out infinite alternate;transform-origin:center}
+    @keyframes bgMove{0%{transform:scale(1) translate3d(0,0,0)}50%{transform:scale(1.1) translate3d(-10px,-10px,0)}100%{transform:scale(1.2) translate3d(10px,10px,0)}}
+    body::after{content:"";position:fixed;inset:0;background:radial-gradient(circle at top,rgba(255,255,255,0.08),transparent 55%),linear-gradient(to bottom,rgba(0,0,0,0.8),rgba(0,0,0,0.95));z-index:-1}
+
+    .app-container{max-width:900px;margin:40px auto;padding:24px;border-radius:18px;background:rgba(10,10,25,0.9);box-shadow:0 24px 60px rgba(0,0,0,0.7),0 0 0 1px rgba(255,255,255,0.04);backdrop-filter:blur(18px)}
+    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;gap:12px;flex-wrap:wrap}
+    .title{font-size:1.4rem;font-weight:600;letter-spacing:.04em}
+    .subtitle{font-size:.9rem;color:#b0b6ff;opacity:.9}
+    .pill{padding:6px 12px;border-radius:999px;font-size:.8rem;background:linear-gradient(135deg,#6366f1,#22c55e);color:#0b1020;font-weight:600;box-shadow:0 0 0 1px rgba(255,255,255,0.2)}
+    .progress-bar{width:100%;height:8px;border-radius:999px;background:rgba(255,255,255,0.06);overflow:hidden;margin-bottom:18px}
+    .progress-fill{height:100%;width:0;border-radius:inherit;background:linear-gradient(90deg,#22c55e,#a3e635);transition:width .25s ease-out}
+
+    .quiz-card{border-radius:16px;padding:20px 18px;background:radial-gradient(circle at top left,rgba(99,102,241,0.18),transparent 55%),radial-gradient(circle at bottom right,rgba(34,197,94,0.18),transparent 55%),rgba(15,23,42,0.95);border:1px solid rgba(148,163,184,0.35);position:relative;overflow:hidden;}
+    .question-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:.85rem;color:#cbd5f5;opacity:.9}
+    .question-index{font-weight:600;letter-spacing:.08em;text-transform:uppercase;font-size:.75rem;color:#a5b4fc}
+    .question-type{font-size:1.8rem;padding:4px 10px;border-radius:999px;background:rgba(15,118,110,0.2);color:#5eead4;border:1px solid rgba(45,212,191,0.4)}
+
+    .prompt-label{font-size:.8rem;text-transform:uppercase;letter-spacing:.12em;color:#9ca3af;margin-bottom:4px}
+    .prompt-text{font-size:2.4rem;font-weight:500;color:#e5e7eb;margin-bottom:16px}
+    .prompt-helper{
+  font-size:1.15rem;
+  font-weight:500;
+  color:#dbe0ff;
+  margin-bottom:18px;
+  padding-left:12px;
+  border-left:3px solid rgba(99,102,241,0.6)
+}
+
+    .options{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:18px}
+    .option-btn{width:100%;text-align:left;padding:10px 12px;border-radius:12px;border:1px solid rgba(148,163,184,0.5);background:rgba(15,23,42,0.9);color:#e5e7eb;font-size:.95rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px;transition:all .18s ease-out}
+    .option-btn span.label{font-weight:500}
+    .option-btn:hover{border-color:#6366f1;background:radial-gradient(circle at top left,rgba(99,102,241,0.25),transparent 60%),rgba(15,23,42,0.95);transform:translateY(-1px);box-shadow:0 10px 25px rgba(15,23,42,0.7)}
+    .option-btn.selected{border-color:#6366f1;background:linear-gradient(135deg,rgba(79,70,229,0.9),rgba(37,99,235,0.9));box-shadow:0 12px 30px rgba(79,70,229,0.7)}
+    .option-btn.correct{border-color:#22c55e;background:linear-gradient(135deg,rgba(22,163,74,0.9),rgba(34,197,94,0.9));box-shadow:0 12px 30px rgba(22,163,74,0.7)}
+    .option-btn.incorrect{border-color:#ef4444;background:linear-gradient(135deg,rgba(185,28,28,0.9),rgba(239,68,68,0.9));box-shadow:0 12px 30px rgba(185,28,28,0.7)}
+
+    .feedback{min-height:20px;font-size:.9rem;margin-bottom:10px}
+    .feedback.correct{color:#4ade80}
+    .feedback.incorrect{color:#f97373}
+
+    .nav-row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:6px}
+    .nav-buttons{display:flex;gap:8px}
+    button.nav-btn,button.secondary-btn{border-radius:999px;border:none;padding:8px 14px;font-size:.9rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .18s ease-out;white-space:nowrap}
+    button.nav-btn{background:rgba(15,23,42,0.9);color:#e5e7eb;border:1px solid rgba(148,163,184,0.6)}
+    button.nav-btn:disabled{opacity:.4;cursor:default;transform:none;box-shadow:none}
+    button.nav-btn:not(:disabled):hover{border-color:#6366f1;background:rgba(30,64,175,0.9);box-shadow:0 8px 20px rgba(30,64,175,0.7);transform:translateY(-1px)}
+    button.secondary-btn{background:rgba(15,23,42,0.9);color:#e5e7eb;border:1px solid rgba(148,163,184,0.6)}
+    button.secondary-btn:hover{border-color:#f97316;background:rgba(30,64,175,0.9);box-shadow:0 8px 20px rgba(30,64,175,0.7);transform:translateY(-1px)}
+
+    .progress-text{font-size:.85rem;color:#9ca3af}
+    .score-pill{font-size:.85rem;padding:4px 10px;border-radius:999px;background:rgba(22,163,74,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.5)}
+
+    .recap{margin-top:18px;padding-top:14px;border-top:1px solid rgba(148,163,184,0.4);max-height:260px;overflow-y:auto;scrollbar-width:thin}
+    .recap h3{font-size:.95rem;margin-bottom:8px;color:#e5e7eb}
+    .recap-item{padding:8px 0;border-bottom:1px dashed rgba(148,163,184,0.4);font-size:.85rem}
+    .recap-item:last-child{border-bottom:none}
+    .recap-item .q-label{font-weight:600;color:#c4b5fd;margin-bottom:2px}
+    .recap-item .prompt{color:#9ca3af;margin-bottom:2px}
+    .recap-item .answer-line{display:flex;flex-wrap:wrap;gap:6px}
+    .tag-correct{color:#4ade80}
+    .tag-incorrect{color:#f97373}
+    .tag-neutral{color:#e5e7eb}
+
+    @media(min-width:640px){.options{grid-template-columns:1fr 1fr 1fr}}
+  
+/* ===== Adaptive option layouts (v03) ===== */
+.layout-1{grid-template-columns:1fr}
+.layout-2{grid-template-columns:1fr 1fr}
+.layout-3{grid-template-columns:repeat(3,1fr)}
+.layout-4{grid-template-columns:repeat(2,1fr)}
+
+.layout-5{grid-template-columns:repeat(6,1fr)}
+.layout-5 .option-btn:nth-child(-n+3){grid-column:span 2}
+.layout-5 .option-btn:nth-child(n+4){grid-column:span 3}
+
+.layout-6{grid-template-columns:repeat(3,1fr)}
+
+.layout-7{grid-template-columns:repeat(6,1fr)}
+.layout-7 .option-btn:nth-child(-n+3){grid-column:span 2}
+.layout-7 .option-btn:nth-child(n+4){grid-column:span 3}
+
+.layout-8{grid-template-columns:repeat(6,1fr)}
+.layout-8 .option-btn:nth-child(-n+6){grid-column:span 2}
+.layout-8 .option-btn:nth-child(n+7){grid-column:span 3}
+
+@media(max-width:640px){
+  .options{grid-template-columns:1fr}
+}
+
+
+/* ===== Header clamp (prevent long title overlapping the pill) ===== */
+header > div:first-child{max-width:calc(100% - 220px);}
+header .title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+header .subtitle{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:1;overflow:hidden;}
+
+
+/* ===== Menu overlay ===== */
+.quiz-card.menu-open{height:240px;max-height:240px;}
+@media(max-width:640px){.quiz-card.menu-open{height:280px;max-height:280px;}}
+.menu-overlay{position:absolute;inset:0;border-radius:16px;z-index:50;overflow:hidden;background-image:url("Box Background.png");background-size:cover;background-position:center;background-repeat:no-repeat;background-color:rgba(15,23,42,0.55);background-blend-mode:overlay;border:1px solid rgba(148,163,184,0.35);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.06);padding:18px 18px;display:flex;flex-direction:column;justify-content:space-between;}
+/* Fallback ONLY when Box Background.png is missing */
+.menu-overlay.fallback{background-image:none;background-blend-mode:normal;background:linear-gradient(180deg, rgba(10,10,25,0.92), rgba(10,10,25,0.82));}
+.menu-actions{display:flex;justify-content:flex-start;}
+#menuInfo,#menuSubtitle,#menuTitle{white-space:pre-line;}
+/* ===== Menu text styles ===== */
+.menu-head{display:flex;flex-direction:column;gap:10px;}
+#menuWelcome{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(176,182,255,0.75);}
+#menuTitle{font-size:clamp(1.35rem, 2.8vw, 2.15rem);line-height:1.12;padding-bottom:4px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;}
+#menuSubtitle{font-size:1.12rem;line-height:1.28;color:#b0b6ff;opacity:.97;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;}
+#menuInfo{font-size:1.02rem;line-height:1.3;color:#e5e7eb;opacity:.97;max-height:100px;overflow:auto;padding:10px 12px;border-radius:12px;background:rgba(0,0,0,0.16);border:1px solid rgba(148,163,184,0.12);}
+#menuInfo.is-empty{display:none;}
+#feedback,#promptHelper,.subtitle{white-space:pre-line;}
+
+
+
+/* ===== Adaptive option layouts (restored logic) =====
+   1 option  -> full width
+   2 options -> 2 columns
+   3 options -> 3 columns (2 columns on small laptops)
+   4 options -> 2x2
+   5 options -> 3 + 2 (top row 3)
+   Mobile    -> always 1 column
+*/
+@media(max-width:900px){
+  .layout-3{grid-template-columns:1fr 1fr;}
+}
+
+
+/* ===== Responsive spacing (reduce scroll) ===== */
+/* Use viewport-aware margins so the quiz sits higher on shorter screens */
+.app-container{margin:24px auto;}
+@media(max-height:760px){
+  .app-container{margin:14px auto;}
+}
+@media(max-width:900px){
+  .app-container{margin:18px auto;padding:18px;}
+  header{margin-bottom:12px;}
+  .progress-bar{margin-bottom:12px;}
+  .prompt-text{font-size:clamp(1.6rem, 4.8vw, 2.15rem);margin-bottom:12px;}
+  .quiz-card{padding:18px 16px;}
+}
+@media(max-width:640px){
+  .app-container{margin:10px auto;padding:14px;}
+  header{margin-bottom:10px;gap:8px;}
+  .progress-bar{margin-bottom:10px;}
+  .prompt-helper{font-size:1.02rem;margin-bottom:12px;}
+  .prompt-text{font-size:clamp(1.35rem, 6vw, 1.85rem);margin-bottom:10px;}
+  .quiz-card{padding:16px 14px;}
+  button.nav-btn,button.secondary-btn{padding:8px 12px;}
+}
+</style>
+</head>
+<body>
+  <div class="app-container">
+    <header>
+      <div>
+        <div class="title">{{TITLE}}</div>
+        <div class="subtitle">{{SUBTITLE}}</div>
+      </div>
+      <div class="pill" id="pillText">Multiple Choice</div>
+    </header>
+
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <div class="quiz-card">
+  <div class="menu-overlay" id="menuOverlay">
+    <div class="menu-head">
+      <div id="menuWelcome">WELCOME</div>
+      <div id="menuTitle">{{TITLE}}</div>
+      <div id="menuSubtitle">{{SUBTITLE}}</div>
+      <div id="menuInfo" class="is-empty" style="display:none"></div>
+    </div>
+    <div class="menu-actions">
+      <button class="nav-btn" id="startQuizBtn" type="button">Start quiz</button>
+    </div>
+  </div>
+  <div id="quizUI">
+
+      <div class="question-meta">
+        <div class="question-index" id="questionIndex">Question 1 / 10</div>
+        <div class="question-type" id="questionType"></div>
+      </div>
+
+      <div class="prompt-label" id="promptLabel" style="display:none">Prompt</div>
+      <div class="prompt-helper" id="promptHelper">{{PROMPT_HELPER}}</div>
+ <div class="prompt-text" id="promptText">...</div>
+
+      <div class="options" id="optionsContainer"></div>
+      <div class="feedback" id="feedback"></div>
+
+      <div class="nav-row">
+        <div class="nav-buttons">
+          <button class="nav-btn" id="prevBtn" disabled>← Previous</button>
+          <button class="nav-btn" id="nextBtn">Next →</button>
+        </div>
+        <div class="nav-buttons">
+          <button class="secondary-btn" id="menuBtn" type="button">Back to menu</button>
+          <button class="secondary-btn" id="restartBtn">Restart</button>
+        </div>
+      </div>
+
+      <div class="nav-row" style="margin-top:10px;">
+        <div class="progress-text" id="progressText">Answered 0 / 10</div>
+        <div class="score-pill" id="scorePill">Score: 0 / 10</div>
+      </div>
+
+      <div class="recap" id="recap" style="display:block;">
+        <h3>Recap</h3>
+        <div id="recapList"></div>
+      </div>
+    </div>
+  </div>
+
+    </div>
+
+<!-- The generator will upsert these constants: QUIZ_CONFIG, LABEL_CONFIG, DATA -->
+  <script>
+    const QUIZ_CONFIG = {
+  "fields": {
+    "english": {
+      "roles": [
+        "answer"
+      ],
+      "label": ""
+    },
+    "french": {
+      "roles": [
+        "prompt"
+      ],
+      "label": "FRENCH"
+    },
+    "syn1": {
+      "roles": [
+        "prompt"
+      ],
+      "label": "SYNONYM"
+    },
+    "syn2": {
+      "roles": [
+        "prompt"
+      ],
+      "label": "SYNONYM"
+    },
+    "opposite": {
+      "roles": [
+        "prompt"
+      ],
+      "label": "OPPOSITE"
+    },
+    "fill": {
+      "roles": [],
+      "label": ""
+    },
+    "class": {
+      "roles": [],
+      "label": ""
+    },
+    "theme": {
+      "roles": [],
+      "label": ""
+    },
+    "def1": {
+      "roles": [
+        "prompt"
+      ],
+      "label": "DEFINITION"
+    },
+    "def2": {
+      "roles": [],
+      "label": ""
+    },
+    "sentence": {
+      "roles": [],
+      "label": ""
+    },
+    "traduction": {
+      "roles": [],
+      "label": ""
+    }
+  },
+  "text": {
+    "title": "Les 200 mots anglais les plus courants",
+    "subtitle": "The 200 most common words in english",
+    "prompt_helper": "Which English term matches this prompt?",
+    "correct": "Correct! comme dans la phrase : \"{{sentence}}\" (en français: \"{{traduction}}\")",
+    "incorrect": "Incorrect. La bonne réponse était : \"{{answer}}\" (en français : \"{{french}}\")",
+    "score": "Score: {{score}} / {{total}}",
+    "end_message": "Quiz complete!",
+    "menu_info": "Ce quiz est conçu pour vous faire apprendre les 200 mots anglais les plus courants. \nrépondez aux 10 questions. Elles seront différentes chaque fois que vous essayez le quiz.",
+    "start_button": "Start quiz",
+    "menu_button": "Back to menu"
+  },
+  "settings": {
+    "num_options": 3,
+    "num_questions": 10
+  }
+};
+    const LABEL_CONFIG = {
+  "DEFINITION": {
+    "uiLabel": "Definition",
+    "uiQuestion": "Quel mot anglais signifie:",
+    "maskAnswer": false
+  },
+  "FRENCH": {
+    "uiLabel": "Français",
+    "uiQuestion": "Comment dit-on ce mot en anglais?",
+    "maskAnswer": false
+  },
+  "OPPOSITE": {
+    "uiLabel": "Opposite",
+    "uiQuestion": "Quel mot anglais a le sens contraire de :",
+    "maskAnswer": false
+  },
+  "SYNONYM": {
+    "uiLabel": "Synonym",
+    "uiQuestion": "Un autre mot qui veut dire:",
+    "maskAnswer": false
+  }
+};
+    const DATA = [
+ { english: "agree", french: "être d'accord", syn1: "accept", syn2: "approve", opposite: "", fill: "I agree with your point.", class: "Verb", theme: "Communication", def1: "to have the same opinion", def2: "to say yes to a plan", sentence: "I agree with you.", traduction: "Je suis d’accord avec toi." },
+ { english: "answer", french: "répondre", syn1: "reply", syn2: "respond", opposite: "ask", fill: "Can you answer this question honestly?", class: "Verb", theme: "General English", def1: "to reply", def2: "to respond", sentence: "Can you answer this question?", traduction: "Peux-tu répondre à cette question ?" },
+ { english: "arrive", french: "arriver", syn1: "reach", syn2: "come", opposite: "depart", fill: "Please arrive by 9 a.m., not later.", class: "Verb", theme: "General English", def1: "to reach", def2: "to come", sentence: "We arrive at the station at 8:30.", traduction: "Nous arrivons à la gare à 8 h 30." },
+ { english: "ask", french: "demander", syn1: "question", syn2: "inquire", opposite: "answer", fill: "If you’re not sure, ask the teacher.", class: "Verb", theme: "General English", def1: "to question", def2: "to inquire", sentence: "Don’t be shy—ask if you don’t understand.", traduction: "Ne sois pas timide — demande si tu ne comprends pas." },
+ { english: "bad", french: "mauvais", syn1: "poor", syn2: "awful", opposite: "good", fill: "I’m having a bad day.", class: "Adjective", theme: "General English", def1: "not good", def2: "of low quality", sentence: "I’m having a bad day.", traduction: "Je passe une mauvaise journée." },
+ { english: "be", french: "être", syn1: "exist", syn2: "remain", opposite: "", fill: "Try to be patient with yourself.", class: "Verb", theme: "General English", def1: "to exist or live", def2: "to stay in a particular state", sentence: "I want to be more confident in English.", traduction: "Je veux être plus à l’aise en anglais." },
+ { english: "believe", french: "croire", syn1: "think", syn2: "trust", opposite: "", fill: "I believe you, but I need proof.", class: "Verb", theme: "General English", def1: "to accept as true", def2: "to trust someone", sentence: "I believe you.", traduction: "Je te crois." },
+ { english: "big", french: "grand", syn1: "large", syn2: "huge", opposite: "small", fill: "That bag is too big for the locker.", class: "Adjective", theme: "General English", def1: "large in size", def2: "important or serious", sentence: "This bag is too big.", traduction: "Ce sac est trop grand." },
+ { english: "book", french: "réserver", syn1: "reserve", syn2: "schedule", opposite: "cancel", fill: "I’ll book a table for two at 8.", class: "Verb", theme: "General English", def1: "to reserve", def2: "to schedule", sentence: "I’ll book a table for two.", traduction: "Je vais réserver une table pour deux." },
+ { english: "borrow", french: "emprunter", syn1: "take", syn2: "take temporarily", opposite: "lend", fill: "Can I borrow your charger for five minutes?", class: "Verb", theme: "General English", def1: "to take", def2: "to take temporarily", sentence: "Can I borrow your pen for a second?", traduction: "Je peux emprunter ton stylo une seconde ?" },
+ { english: "bread", french: "pain", syn1: "loaf", syn2: "sliced bread", opposite: "", fill: "We need to buy bread.", class: "Noun", theme: "Food", def1: "food made from flour", def2: "bread you eat with meals", sentence: "We need more bread.", traduction: "Il nous faut plus de pain." },
+ { english: "break", french: "casser", syn1: "damage", syn2: "shatter", opposite: "fix", fill: "Don’t break the glass—it’s fragile.", class: "Verb", theme: "General English", def1: "to damage", def2: "to shatter", sentence: "Be careful not to break the glass.", traduction: "Fais attention à ne pas casser le verre." },
+ { english: "bring", french: "apporter", syn1: "carry", syn2: "deliver", opposite: "", fill: "Bring your laptop tomorrow.", class: "Verb", theme: "General English", def1: "to take something to a place", def2: "to cause someone/something to come", sentence: "Bring your notebook tomorrow.", traduction: "Apporte ton cahier demain." },
+ { english: "build", french: "construire", syn1: "construct", syn2: "make", opposite: "", fill: "They want to build a new playground.", class: "Verb", theme: "General English", def1: "to make by putting parts together", def2: "to develop gradually", sentence: "They’re building a new school nearby.", traduction: "Ils construisent une nouvelle école pas loin." },
+ { english: "busy", french: "occupé", syn1: "occupied", syn2: "active", opposite: "free", fill: "I’m busy right now—can I call you later?", class: "Adjective", theme: "Work", def1: "having no spare time", def2: "working on tasks", sentence: "I’m busy right now.", traduction: "Je suis occupé en ce moment." },
+ { english: "buy", french: "acheter", syn1: "purchase", syn2: "get", opposite: "sell", fill: "I need to buy milk on the way home.", class: "Verb", theme: "Shopping", def1: "to purchase", def2: "to get", sentence: "I need to buy some bread.", traduction: "Je dois acheter du pain." },
+ { english: "call", french: "appeler", syn1: "phone", syn2: "ring", opposite: "", fill: "Call me when you get there.", class: "Verb", theme: "Communication", def1: "to phone", def2: "to ring", sentence: "I’ll call you after work.", traduction: "Je t’appelle après le travail." },
+ { english: "cancel", french: "annuler", syn1: "call off", syn2: "postpone", opposite: "book", fill: "They had to cancel the trip because of the storm.", class: "Verb", theme: "General English", def1: "to call off", def2: "to postpone", sentence: "They had to cancel the meeting.", traduction: "Ils ont dû annuler la réunion." },
+ { english: "carry", french: "porter", syn1: "hold", syn2: "transport", opposite: "", fill: "Can you carry this suitcase up the stairs?", class: "Verb", theme: "General English", def1: "to hold", def2: "to transport", sentence: "Can you carry this box for me?", traduction: "Tu peux porter cette boîte pour moi ?" },
+ { english: "change", french: "changer", syn1: "alter", syn2: "switch", opposite: "", fill: "Change your password regularly.", class: "Verb", theme: "General English", def1: "to become different", def2: "to replace with something else", sentence: "I want to change my schedule.", traduction: "Je veux changer mon emploi du temps." },
+ { english: "check", french: "vérifier", syn1: "inspect", syn2: "look at", opposite: "", fill: "Check the date and the time carefully.", class: "Verb", theme: "Work", def1: "to examine for accuracy", def2: "to make sure something is OK", sentence: "Check the details before you send it.", traduction: "Vérifie les détails avant de l’envoyer." },
+ { english: "child", french: "enfant", syn1: "kid", syn2: "youngster", opposite: "", fill: "That child loves to ask questions.", class: "Noun", theme: "Family", def1: "a young person", def2: "someone's son or daughter", sentence: "That child is really curious.", traduction: "Cet enfant est vraiment curieux." },
+ { english: "choose", french: "choisir", syn1: "select", syn2: "pick", opposite: "", fill: "Choose the option that makes the most sense.", class: "Verb", theme: "General English", def1: "to decide which one", def2: "to prefer one option", sentence: "Choose the one you like.", traduction: "Choisis celui que tu aimes." },
+ { english: "class", french: "cours", syn1: "lesson", syn2: "course", opposite: "", fill: "Our class ends at five.", class: "Noun", theme: "School", def1: "a lesson at school", def2: "a group of students", sentence: "Our class starts at nine.", traduction: "Notre cours commence à neuf heures." },
+ { english: "clean", french: "nettoyer", syn1: "wash", syn2: "tidy", opposite: "", fill: "Let’s clean the kitchen before guests arrive.", class: "Verb", theme: "Daily life", def1: "to wash", def2: "to tidy", sentence: "I need to clean the kitchen tonight.", traduction: "Je dois nettoyer la cuisine ce soir." },
+ { english: "close", french: "fermer", syn1: "shut", syn2: "", opposite: "open", fill: "Close the window—it’s getting cold.", class: "Verb", theme: "General English", def1: "to shut", def2: "to do this action", sentence: "Please close the door quietly.", traduction: "Ferme la porte doucement, s’il te plaît." },
+ { english: "coffee", french: "café", syn1: "espresso", syn2: "coffee drink", opposite: "", fill: "I can’t start my day without coffee.", class: "Noun", theme: "Food", def1: "a drink with caffeine", def2: "coffee you drink hot", sentence: "I can’t start the day without coffee.", traduction: "Je ne peux pas commencer la journée sans café." },
+ { english: "come", french: "venir", syn1: "arrive", syn2: "join", opposite: "go", fill: "Come here a second—I want to show you something.", class: "Verb", theme: "General English", def1: "to arrive", def2: "to join", sentence: "Come with us—we’re leaving now.", traduction: "Viens avec nous — on part maintenant." },
+ { english: "computer", french: "ordinateur", syn1: "PC", syn2: "laptop", opposite: "", fill: "My computer needs an update.", class: "Noun", theme: "Technology", def1: "an electronic machine", def2: "a device for work and games", sentence: "My computer is too slow.", traduction: "Mon ordinateur est trop lent." },
+ { english: "cook", french: "cuisiner", syn1: "prepare food", syn2: "prepare", opposite: "", fill: "I don’t want to cook tonight—let’s keep it simple.", class: "Verb", theme: "Food", def1: "to prepare food", def2: "to prepare", sentence: "I usually cook dinner at home.", traduction: "Je cuisine généralement le dîner à la maison." },
+ { english: "create", french: "créer", syn1: "make", syn2: "invent", opposite: "", fill: "Create a folder for these documents.", class: "Verb", theme: "General English", def1: "to bring into existence", def2: "to produce something new", sentence: "Let’s create a simple plan.", traduction: "Créons un plan simple." },
+ { english: "cry", french: "pleurer", syn1: "sob", syn2: "weep", opposite: "laugh", fill: "He didn’t cry, but you could tell he was upset.", class: "Verb", theme: "General English", def1: "to sob", def2: "to weep", sentence: "The baby starts to cry when he’s tired.", traduction: "Le bébé se met à pleurer quand il est fatigué." },
+ { english: "cut", french: "couper", syn1: "slice", syn2: "chop", opposite: "", fill: "Cut the paper along the dotted line.", class: "Verb", theme: "General English", def1: "to slice", def2: "to chop", sentence: "Could you cut the cake into slices?", traduction: "Tu peux couper le gâteau en parts ?" },
+ { english: "day", french: "jour", syn1: "date", syn2: "daytime", opposite: "", fill: "It was a long day at work.", class: "Noun", theme: "Time", def1: "a period of 24 hours", def2: "the time when it is light", sentence: "I had a long day.", traduction: "J’ai eu une longue journée." },
+ { english: "decide", french: "décider", syn1: "choose", syn2: "determine", opposite: "", fill: "Decide now, or we’ll be late.", class: "Verb", theme: "General English", def1: "to make a choice", def2: "to reach a conclusion", sentence: "We need to decide today.", traduction: "On doit décider aujourd’hui." },
+ { english: "different", french: "différent", syn1: "distinct", syn2: "varied", opposite: "same", fill: "This one tastes different from the last one.", class: "Adjective", theme: "General English", def1: "not the same", def2: "separate or not equal", sentence: "This one is different from the others.", traduction: "Celui-ci est différent des autres." },
+ { english: "disagree", french: "ne pas être d'accord", syn1: "differ", syn2: "object", opposite: "", fill: "I disagree, but I respect your opinion.", class: "Verb", theme: "Communication", def1: "to have a different opinion", def2: "to say you do not accept", sentence: "I disagree—let’s talk about it.", traduction: "Je ne suis pas d’accord — parlons-en." },
+ { english: "do", french: "faire", syn1: "perform", syn2: "carry out", opposite: "", fill: "Do your homework before you play.", class: "Verb", theme: "General English", def1: "to perform an action", def2: "to complete a task", sentence: "I do my homework after dinner.", traduction: "Je fais mes devoirs après le dîner." },
+ { english: "door", french: "porte", syn1: "entrance", syn2: "gate", opposite: "", fill: "The door won’t open—it’s stuck.", class: "Noun", theme: "Home", def1: "a panel you open to enter", def2: "a way to access a place", sentence: "The door is locked.", traduction: "La porte est verrouillée." },
+ { english: "drink", french: "boire", syn1: "sip", syn2: "swallow", opposite: "", fill: "Drink some water—you look dehydrated.", class: "Verb", theme: "Food", def1: "to sip", def2: "to swallow", sentence: "Remember to drink enough water.", traduction: "N’oublie pas de boire assez d’eau." },
+ { english: "drive", french: "conduire", syn1: "operate", syn2: "steer", opposite: "", fill: "I can drive you to the station if you want.", class: "Verb", theme: "General English", def1: "to operate", def2: "to steer", sentence: "I don’t like to drive in the rain.", traduction: "Je n’aime pas conduire sous la pluie." },
+ { english: "drop", french: "laisser tomber", syn1: "let fall", syn2: "let go", opposite: "", fill: "Be careful not to drop your phone.", class: "Verb", theme: "General English", def1: "to let fall", def2: "to let go", sentence: "Don’t drop your phone!", traduction: "Ne fais pas tomber ton téléphone !" },
+ { english: "easy", french: "facile", syn1: "simple", syn2: "effortless", opposite: "hard", fill: "This app is easy to use.", class: "Adjective", theme: "General English", def1: "not difficult", def2: "requiring little effort", sentence: "This exercise is easy.", traduction: "Cet exercice est facile." },
+ { english: "eat", french: "manger", syn1: "consume", syn2: "", opposite: "", fill: "We usually eat dinner around seven.", class: "Verb", theme: "Food", def1: "to consume", def2: "to do this action", sentence: "We usually eat around seven.", traduction: "On mange généralement vers sept heures." },
+ { english: "eat out", french: "manger dehors", syn1: "dine out", syn2: "", opposite: "", fill: "Let’s eat out tonight—no dishes.", class: "Phrasal verb", theme: "Food", def1: "to dine out", def2: "to do this action", sentence: "Let’s eat out tonight.", traduction: "Allons manger dehors ce soir." },
+ { english: "email", french: "e-mail", syn1: "message", syn2: "mail", opposite: "", fill: "I’ll send you an email with the details.", class: "Noun", theme: "Communication", def1: "an electronic letter", def2: "a message sent online", sentence: "I’ll send you an email later.", traduction: "Je t’enverrai un e-mail plus tard." },
+ { english: "enjoy", french: "apprécier", syn1: "like", syn2: "take pleasure in", opposite: "", fill: "I really enjoy this class.", class: "Verb", theme: "General English", def1: "to feel pleasure", def2: "to like doing something", sentence: "I really enjoy this class.", traduction: "J’aime vraiment ce cours." },
+ { english: "evening", french: "soir", syn1: "nightfall", syn2: "late day", opposite: "", fill: "Are you free this evening?", class: "Noun", theme: "Time", def1: "the part of the day after afternoon", def2: "the time before bed", sentence: "See you this evening.", traduction: "À ce soir." },
+ { english: "family", french: "famille", syn1: "relatives", syn2: "household", opposite: "", fill: "My family is coming over this weekend.", class: "Noun", theme: "Family", def1: "parents and children", def2: "people related to you", sentence: "My family lives nearby.", traduction: "Ma famille vit tout près." },
+ { english: "father", french: "père", syn1: "dad", syn2: "daddy", opposite: "", fill: "Her father cooks dinner on Sundays.", class: "Noun", theme: "Family", def1: "a male parent", def2: "the man who has a child", sentence: "Her father is very kind.", traduction: "Son père est très gentil." },
+ { english: "feel", french: "se sentir", syn1: "sense", syn2: "experience", opposite: "", fill: "I feel better after a good night’s sleep.", class: "Verb", theme: "General English", def1: "to have a feeling", def2: "to touch and notice", sentence: "I feel much better now.", traduction: "Je me sens beaucoup mieux maintenant." },
+ { english: "find", french: "trouver", syn1: "discover", syn2: "locate", opposite: "", fill: "I can’t find my keys anywhere.", class: "Verb", theme: "General English", def1: "to discover", def2: "to locate", sentence: "I can’t find my keys.", traduction: "Je n’arrive pas à trouver mes clés." },
+ { english: "find out", french: "découvrir", syn1: "discover", syn2: "learn", opposite: "", fill: "I need to find out what time it starts.", class: "Phrasal verb", theme: "General English", def1: "to learn new information", def2: "to become aware of a fact", sentence: "I need to find out what happened.", traduction: "Je dois découvrir ce qui s’est passé." },
+ { english: "finish", french: "finir", syn1: "end", syn2: "complete", opposite: "start", fill: "Finish your sentence before you change the topic.", class: "Verb", theme: "General English", def1: "to end", def2: "to complete", sentence: "Can you finish this by tomorrow?", traduction: "Tu peux finir ça pour demain ?" },
+ { english: "fix", french: "réparer", syn1: "repair", syn2: "mend", opposite: "break", fill: "Can you fix this bike tire quickly?", class: "Verb", theme: "General English", def1: "to repair", def2: "to mend", sentence: "I need to fix my bike this weekend.", traduction: "Je dois réparer mon vélo ce week-end." },
+ { english: "food", french: "nourriture", syn1: "meal", syn2: "cuisine", opposite: "", fill: "The food smells amazing.", class: "Noun", theme: "Food", def1: "what you eat", def2: "things people eat", sentence: "The food here is amazing.", traduction: "La nourriture ici est incroyable." },
+ { english: "forget", french: "oublier", syn1: "lose", syn2: "fail to remember", opposite: "remember", fill: "Don’t forget your passport.", class: "Verb", theme: "General English", def1: "to lose", def2: "to fail to remember", sentence: "Don’t forget to bring your ID.", traduction: "N’oublie pas d’apporter ta carte d’identité." },
+ { english: "free", french: "libre", syn1: "available", syn2: "unoccupied", opposite: "busy", fill: "Are you free after work?", class: "Adjective", theme: "Work", def1: "not busy", def2: "costing no money", sentence: "Are you free this evening?", traduction: "Tu es libre ce soir ?" },
+ { english: "friend", french: "ami(e)", syn1: "buddy", syn2: "pal", opposite: "", fill: "She’s a close friend of mine.", class: "Noun", theme: "People", def1: "a person you like and trust", def2: "someone you spend time with", sentence: "He’s a close friend of mine.", traduction: "C’est un ami proche." },
+ { english: "fruit", french: "fruit", syn1: "produce", syn2: "fresh fruit", opposite: "", fill: "I eat fruit for breakfast.", class: "Noun", theme: "Food", def1: "sweet plant food", def2: "apples, bananas, etc.", sentence: "I eat fruit every morning.", traduction: "Je mange des fruits chaque matin." },
+ { english: "get", french: "obtenir", syn1: "receive", syn2: "fetch", opposite: "", fill: "Get your coat—we’re going out.", class: "Verb", theme: "General English", def1: "to obtain something", def2: "to become or arrive at a state", sentence: "I get nervous before exams.", traduction: "Je deviens nerveux avant les examens." },
+ { english: "get dressed", french: "s'habiller", syn1: "put on clothes", syn2: "", opposite: "", fill: "Hurry up and get dressed—we’re leaving.", class: "Phrasal verb", theme: "General English", def1: "to put on clothes", def2: "to do this action", sentence: "Hurry up and get dressed!", traduction: "Dépêche-toi et habille-toi !" },
+ { english: "get up", french: "se lever", syn1: "rise", syn2: "wake", opposite: "", fill: "Get up—we’ll miss the train!", class: "Phrasal verb", theme: "Daily life", def1: "to leave your bed", def2: "to stand after sitting", sentence: "I get up early on weekdays.", traduction: "Je me lève tôt en semaine." },
+ { english: "give", french: "donner", syn1: "offer", syn2: "hand", opposite: "", fill: "Give me a second—I’m almost done.", class: "Verb", theme: "General English", def1: "to transfer to someone", def2: "to provide something", sentence: "Can you give me a hand?", traduction: "Tu peux me donner un coup de main ?" },
+ { english: "give up", french: "abandonner", syn1: "quit", syn2: "stop", opposite: "", fill: "Don’t give up—you’re so close.", class: "Phrasal verb", theme: "General English", def1: "to stop trying", def2: "to stop a habit", sentence: "Don’t give up—you’re doing great.", traduction: "N’abandonne pas — tu te débrouilles très bien." },
+ { english: "go", french: "aller", syn1: "move", syn2: "leave", opposite: "", fill: "I have to go now—see you later.", class: "Verb", theme: "General English", def1: "to move", def2: "to leave", sentence: "I have to go now—see you later.", traduction: "Je dois y aller maintenant — à plus tard." },
+ { english: "go in", french: "sortir", syn1: "enter", syn2: "", opposite: "", fill: "Go in, the door is open.", class: "Phrasal verb", theme: "General English", def1: "to enter", def2: "to do this action", sentence: "You can go in; the doctor is ready.", traduction: "Tu peux entrer ; le médecin est prêt." },
+ { english: "good", french: "bon", syn1: "great", syn2: "fine", opposite: "bad", fill: "That sounds good to me.", class: "Adjective", theme: "General English", def1: "of high quality", def2: "pleasant or useful", sentence: "That sounds good to me.", traduction: "Ça me paraît bien." },
+ { english: "happy", french: "heureux", syn1: "glad", syn2: "pleased", opposite: "sad", fill: "I’m happy you could come today.", class: "Adjective", theme: "Emotions", def1: "feeling good", def2: "satisfied", sentence: "I’m happy to see you.", traduction: "Je suis heureux de te voir." },
+ { english: "hard", french: "difficile", syn1: "difficult", syn2: "tough", opposite: "easy", fill: "It’s hard to focus when you’re tired.", class: "Adjective", theme: "General English", def1: "not easy", def2: "needing effort", sentence: "It’s hard to stay focused.", traduction: "C’est difficile de rester concentré." },
+ { english: "hate", french: "détester", syn1: "dislike", syn2: "despise", opposite: "love", fill: "I hate waiting in long lines.", class: "Verb", theme: "General English", def1: "to dislike", def2: "to despise", sentence: "I hate waking up early.", traduction: "Je déteste me réveiller tôt." },
+ { english: "have", french: "avoir", syn1: "own", syn2: "possess", opposite: "", fill: "I have an appointment at 3.", class: "Verb", theme: "General English", def1: "to own", def2: "to possess", sentence: "I have two meetings today.", traduction: "J’ai deux réunions aujourd’hui." },
+ { english: "help", french: "aider", syn1: "assist", syn2: "support", opposite: "", fill: "Help me carry these bags, please.", class: "Verb", theme: "General English", def1: "to assist", def2: "to support", sentence: "Can you help me with this?", traduction: "Tu peux m’aider avec ça ?" },
+ { english: "hold", french: "tenir", syn1: "grip", syn2: "carry", opposite: "", fill: "Hold the door open for the next person.", class: "Verb", theme: "General English", def1: "to keep in your hand", def2: "to control or contain", sentence: "Hold the door for me, please.", traduction: "Tiens la porte pour moi, s’il te plaît." },
+ { english: "home", french: "chez soi", syn1: "house", syn2: "place to live", opposite: "", fill: "I’m going home after class.", class: "Noun", theme: "Daily life", def1: "the place you live", def2: "where you feel comfortable", sentence: "I’m going home now.", traduction: "Je rentre à la maison maintenant." },
+ { english: "homework", french: "devoirs", syn1: "assignment", syn2: "schoolwork", opposite: "", fill: "I still have homework to do.", class: "Noun", theme: "School", def1: "work you do at home for school", def2: "tasks from a teacher", sentence: "I still have homework to do.", traduction: "J’ai encore des devoirs à faire." },
+ { english: "hope", french: "espérer", syn1: "wish", syn2: "expect", opposite: "", fill: "I hope you have a great day.", class: "Verb", theme: "General English", def1: "to want something to happen", def2: "to believe something good will happen", sentence: "I hope you feel better soon.", traduction: "J’espère que tu iras mieux bientôt." },
+ { english: "house", french: "maison", syn1: "home", syn2: "building", opposite: "", fill: "Their house is right around the corner.", class: "Noun", theme: "Daily life", def1: "a building to live in", def2: "the people living in a house", sentence: "Their house is really big.", traduction: "Leur maison est vraiment grande." },
+ { english: "hungry", french: "affamé", syn1: "starving", syn2: "famished", opposite: "", fill: "I’m hungry—let’s grab something to eat.", class: "Adjective", theme: "Food", def1: "needing food", def2: "wanting to eat", sentence: "I’m hungry—let’s eat.", traduction: "J’ai faim — on mange ?" },
+ { english: "hurry", french: "se dépêcher", syn1: "rush", syn2: "", opposite: "", fill: "Hurry, or we’ll miss the bus.", class: "Verb", theme: "General English", def1: "to rush", def2: "to do this action", sentence: "Hurry, or we’ll miss the train.", traduction: "Dépêche-toi, sinon on va rater le train." },
+ { english: "idea", french: "idée", syn1: "thought", syn2: "plan", opposite: "", fill: "That’s a great idea—let’s do it.", class: "Noun", theme: "General English", def1: "a thought in your mind", def2: "a suggestion or plan", sentence: "That’s a great idea!", traduction: "C’est une super idée !" },
+ { english: "important", french: "important", syn1: "significant", syn2: "major", opposite: "", fill: "It’s important to be on time.", class: "Adjective", theme: "Work", def1: "having great meaning", def2: "necessary to pay attention to", sentence: "It’s important to be on time.", traduction: "Il est important d’être à l’heure." },
+ { english: "improve", french: "améliorer", syn1: "better", syn2: "enhance", opposite: "", fill: "Practice every day to improve your pronunciation.", class: "Verb", theme: "Work", def1: "to make better", def2: "to develop skills", sentence: "I want to improve my pronunciation.", traduction: "Je veux améliorer ma prononciation." },
+ { english: "invite", french: "inviter", syn1: "ask", syn2: "welcome", opposite: "", fill: "Did you invite them to your birthday party?", class: "Verb", theme: "General English", def1: "to ask", def2: "to welcome", sentence: "Did you invite Sarah to the party?", traduction: "Tu as invité Sarah à la fête ?" },
+ { english: "job", french: "emploi", syn1: "work", syn2: "position", opposite: "", fill: "I’m applying for a new job.", class: "Noun", theme: "Work", def1: "paid work you do", def2: "a role you have at work", sentence: "I’m looking for a new job.", traduction: "Je cherche un nouvel emploi." },
+ { english: "join", french: "rejoindre", syn1: "participate", syn2: "", opposite: "", fill: "Join us for lunch if you’re free.", class: "Verb", theme: "General English", def1: "to participate", def2: "to do this action", sentence: "Do you want to join us for lunch?", traduction: "Tu veux te joindre à nous pour déjeuner ?" },
+ { english: "jump", french: "sauter", syn1: "leap", syn2: "hop", opposite: "", fill: "Don’t jump on the bed.", class: "Verb", theme: "General English", def1: "to leap", def2: "to hop", sentence: "Don’t jump on the sofa.", traduction: "Ne saute pas sur le canapé." },
+ { english: "keep", french: "garder", syn1: "hold", syn2: "retain", opposite: "", fill: "Keep the receipt in case you need it.", class: "Verb", theme: "General English", def1: "to continue to have", def2: "to not stop doing something", sentence: "Keep this secret, okay?", traduction: "Garde ça secret, d’accord ?" },
+ { english: "key", french: "clé", syn1: "door key", syn2: "password", opposite: "", fill: "I can’t find my key anywhere.", class: "Noun", theme: "Home", def1: "a tool to open a lock", def2: "a secret code (informal)", sentence: "I can’t find my key.", traduction: "Je ne trouve pas ma clé." },
+ { english: "know", french: "savoir", syn1: "understand", syn2: "be aware of", opposite: "", fill: "I know exactly what you mean.", class: "Verb", theme: "General English", def1: "to understand", def2: "to be aware of", sentence: "I know what you mean.", traduction: "Je vois ce que tu veux dire." },
+ { english: "laugh", french: "rire", syn1: "giggle", syn2: "chuckle", opposite: "cry", fill: "Try not to laugh—this is serious.", class: "Verb", theme: "General English", def1: "to giggle", def2: "to chuckle", sentence: "Everyone laughed at his joke.", traduction: "Tout le monde a ri à sa blague." },
+ { english: "learn", french: "apprendre", syn1: "study", syn2: "pick up", opposite: "", fill: "I want to learn how to cook Thai food.", class: "Verb", theme: "School", def1: "to study", def2: "to pick up", sentence: "I’m learning English every day.", traduction: "J’apprends l’anglais tous les jours." },
+ { english: "leave", french: "partir", syn1: "go", syn2: "depart", opposite: "stay", fill: "Leave your shoes by the door.", class: "Verb", theme: "General English", def1: "to go", def2: "to depart", sentence: "We should leave before it gets late.", traduction: "On devrait partir avant qu’il ne soit tard." },
+ { english: "lend", french: "prêter", syn1: "loan", syn2: "", opposite: "borrow", fill: "Could you lend me ten euros until tomorrow?", class: "Verb", theme: "General English", def1: "to loan", def2: "to do this action", sentence: "Can you lend me ten euros?", traduction: "Tu peux me prêter dix euros ?" },
+ { english: "let", french: "laisser", syn1: "allow", syn2: "permit", opposite: "", fill: "Let me know if you need anything.", class: "Verb", theme: "General English", def1: "to allow something", def2: "to not stop or prevent", sentence: "Let me know when you’re free.", traduction: "Dis-moi quand tu es libre." },
+ { english: "listen", french: "écouter", syn1: "hear", syn2: "pay attention", opposite: "", fill: "Listen carefully—this part is important.", class: "Verb", theme: "Communication", def1: "to hear", def2: "to pay attention", sentence: "Listen carefully, please.", traduction: "Écoute attentivement, s’il te plaît." },
+ { english: "look", french: "regarder", syn1: "watch", syn2: "see", opposite: "", fill: "Look at that sunset—it’s beautiful.", class: "Verb", theme: "General English", def1: "to watch", def2: "to see", sentence: "Look at that beautiful sky.", traduction: "Regarde ce beau ciel." },
+ { english: "look after", french: "s'occuper de", syn1: "take care of", syn2: "mind", opposite: "", fill: "Can you look after my bag for a moment?", class: "Phrasal verb", theme: "Family", def1: "to take care of someone", def2: "to be responsible for someone", sentence: "Can you look after my dog?", traduction: "Tu peux t’occuper de mon chien ?" },
+ { english: "look for", french: "chercher", syn1: "search", syn2: "seek", opposite: "", fill: "I’m looking for my wallet.", class: "Phrasal verb", theme: "General English", def1: "to search", def2: "to seek", sentence: "I’m looking for my wallet.", traduction: "Je cherche mon portefeuille." },
+ { english: "look up", french: "chercher (dans un dictionnaire)", syn1: "search", syn2: "check", opposite: "", fill: "Look up that word in the dictionary.", class: "Phrasal verb", theme: "School", def1: "to find information", def2: "to search in a list or dictionary", sentence: "Look up that word in the dictionary.", traduction: "Cherche ce mot dans le dictionnaire." },
+ { english: "lose", french: "perdre", syn1: "misplace", syn2: "", opposite: "", fill: "I always lose my keys when I’m in a hurry.", class: "Verb", theme: "General English", def1: "to misplace", def2: "to do this action", sentence: "I always lose my keys.", traduction: "Je perds toujours mes clés." },
+ { english: "love", french: "aimer", syn1: "adore", syn2: "", opposite: "hate", fill: "I love this song—it never gets old.", class: "Verb", theme: "General English", def1: "to adore", def2: "to do this action", sentence: "I love this song.", traduction: "J’adore cette chanson." },
+ { english: "make", french: "faire", syn1: "create", syn2: "produce", opposite: "", fill: "Make a list so you don’t forget anything.", class: "Verb", theme: "General English", def1: "to create or build something", def2: "to cause something to happen", sentence: "Can you make some tea?", traduction: "Tu peux faire du thé ?" },
+ { english: "meet", french: "rencontrer", syn1: "see", syn2: "gather", opposite: "", fill: "Let’s meet at the café at noon.", class: "Verb", theme: "Work", def1: "to see", def2: "to gather", sentence: "Let’s meet at 3 p.m.", traduction: "Retrouvons-nous à 15 h." },
+ { english: "meeting", french: "réunion", syn1: "appointment", syn2: "session", opposite: "", fill: "The meeting starts at ten.", class: "Noun", theme: "Work", def1: "a gathering to talk about work", def2: "a scheduled discussion", sentence: "I have a meeting at 10.", traduction: "J’ai une réunion à 10 h." },
+ { english: "money", french: "argent", syn1: "cash", syn2: "funds", opposite: "", fill: "I don’t have enough money right now.", class: "Noun", theme: "Money", def1: "coins and banknotes", def2: "something used to buy things", sentence: "I don’t have enough money today.", traduction: "Je n’ai pas assez d’argent aujourd’hui." },
+ { english: "month", french: "mois", syn1: "calendar month", syn2: "period", opposite: "", fill: "Next month, I’m starting a new job.", class: "Noun", theme: "Time", def1: "one of 12 parts of a year", def2: "about four weeks", sentence: "April is my favorite month.", traduction: "Avril est mon mois préféré." },
+ { english: "morning", french: "matin", syn1: "early day", syn2: "a.m.", opposite: "", fill: "I go for a walk every morning.", class: "Noun", theme: "Time", def1: "the first part of the day", def2: "the time before lunch", sentence: "I’m not a morning person.", traduction: "Je ne suis pas du matin." },
+ { english: "mother", french: "mère", syn1: "mom", syn2: "mum", opposite: "", fill: "My mother worries about everything.", class: "Noun", theme: "Family", def1: "a female parent", def2: "the woman who has a child", sentence: "My mother calls me every day.", traduction: "Ma mère m’appelle tous les jours." },
+ { english: "move", french: "bouger", syn1: "shift", syn2: "", opposite: "", fill: "Move your chair a little closer.", class: "Verb", theme: "General English", def1: "to shift", def2: "to do this action", sentence: "Please move your car.", traduction: "Déplace ta voiture, s’il te plaît." },
+ { english: "need", french: "avoir besoin", syn1: "require", syn2: "", opposite: "", fill: "I need five minutes to finish this.", class: "Verb", theme: "General English", def1: "to require", def2: "to do this action", sentence: "I need a little help.", traduction: "J’ai besoin d’un peu d’aide." },
+ { english: "new", french: "nouveau", syn1: "recent", syn2: "fresh", opposite: "old", fill: "I got a new phone yesterday.", class: "Adjective", theme: "General English", def1: "not old", def2: "made or obtained recently", sentence: "I bought a new jacket.", traduction: "J’ai acheté une nouvelle veste." },
+ { english: "night", french: "nuit", syn1: "darkness", syn2: "nighttime", opposite: "", fill: "Good night—sleep well.", class: "Noun", theme: "Time", def1: "the time after sunset", def2: "the time when people sleep", sentence: "Good night—sleep well.", traduction: "Bonne nuit — dors bien." },
+ { english: "noisy", french: "bruyant", syn1: "loud", syn2: "rowdy", opposite: "quiet", fill: "It’s too noisy to concentrate.", class: "Adjective", theme: "General English", def1: "making a lot of noise", def2: "full of sound", sentence: "It’s too noisy to study.", traduction: "Il y a trop de bruit pour étudier." },
+ { english: "office", french: "bureau", syn1: "workplace", syn2: "agency", opposite: "", fill: "He left his laptop at the office.", class: "Noun", theme: "Work", def1: "a place where people work", def2: "a room with desks", sentence: "He’s in the office today.", traduction: "Il est au bureau aujourd’hui." },
+ { english: "old", french: "vieux", syn1: "aged", syn2: "ancient", opposite: "new", fill: "This chair is old but comfortable.", class: "Adjective", theme: "General English", def1: "not new", def2: "having existed for a long time", sentence: "This phone is getting old.", traduction: "Ce téléphone commence à dater." },
+ { english: "open", french: "ouvrir", syn1: "unseal", syn2: "", opposite: "close", fill: "Open the box carefully.", class: "Verb", theme: "General English", def1: "to unseal", def2: "to do this action", sentence: "Could you open the window?", traduction: "Tu peux ouvrir la fenêtre ?" },
+ { english: "park", french: "se garer", syn1: "stop", syn2: "leave a car", opposite: "", fill: "You can park here for free on Sundays.", class: "Verb", theme: "Travel", def1: "to stop", def2: "to leave a car", sentence: "We can park near the entrance.", traduction: "On peut se garer près de l’entrée." },
+ { english: "pay", french: "payer", syn1: "settle", syn2: "", opposite: "", fill: "Do you want to pay by card or cash?", class: "Verb", theme: "Money", def1: "to settle", def2: "to do this action", sentence: "Can I pay by card?", traduction: "Je peux payer par carte ?" },
+ { english: "phone", french: "téléphone", syn1: "mobile", syn2: "cellphone", opposite: "", fill: "My phone is on silent.", class: "Noun", theme: "Technology", def1: "a device for calling", def2: "a device for messages", sentence: "My phone battery is low.", traduction: "La batterie de mon téléphone est faible." },
+ { english: "pick up", french: "ramasser", syn1: "collect", syn2: "", opposite: "drop", fill: "Pick up your clothes from the floor.", class: "Phrasal verb", theme: "General English", def1: "to collect", def2: "to do this action", sentence: "Can you pick up the kids after school?", traduction: "Tu peux aller chercher les enfants après l’école ?" },
+ { english: "place", french: "endroit", syn1: "spot", syn2: "location", opposite: "", fill: "This is my favorite place to relax.", class: "Noun", theme: "General English", def1: "a particular area or position", def2: "a space where something happens", sentence: "This is a nice place to relax.", traduction: "C’est un endroit sympa pour se détendre." },
+ { english: "plan", french: "planifier", syn1: "organize", syn2: "arrange", opposite: "", fill: "Plan your trip before you book anything.", class: "Verb", theme: "Work", def1: "to decide what to do", def2: "to prepare steps for the future", sentence: "We should plan the weekend.", traduction: "On devrait planifier le week-end." },
+ { english: "play", french: "jouer", syn1: "perform", syn2: "take part", opposite: "", fill: "Do you want to play a quick game?", class: "Verb", theme: "Leisure", def1: "to do a game or sport", def2: "to perform music", sentence: "Do you want to play a game?", traduction: "Tu veux jouer à un jeu ?" },
+ { english: "price", french: "prix", syn1: "cost", syn2: "charge", opposite: "", fill: "The price is higher than I expected.", class: "Noun", theme: "Money", def1: "the amount of money needed", def2: "the value of something", sentence: "The price is too high.", traduction: "Le prix est trop élevé." },
+ { english: "problem", french: "problème", syn1: "issue", syn2: "trouble", opposite: "", fill: "We have a problem we need to solve.", class: "Noun", theme: "General English", def1: "a difficult situation", def2: "something you need to solve", sentence: "We have a small problem.", traduction: "On a un petit problème." },
+ { english: "put", french: "mettre", syn1: "place", syn2: "set", opposite: "", fill: "Put your phone away during the meeting.", class: "Verb", theme: "General English", def1: "to move something to a position", def2: "to cause something to be in a place", sentence: "Put the keys on the table.", traduction: "Mets les clés sur la table." },
+ { english: "put down", french: "poser", syn1: "set down", syn2: "place", opposite: "pick up", fill: "Put down the knife—slowly.", class: "Phrasal verb", theme: "General English", def1: "to set down", def2: "to place", sentence: "Put down your bag and sit here.", traduction: "Pose ton sac et assieds-toi ici." },
+ { english: "put on", french: "mettre (un vêtement)", syn1: "wear", syn2: "dress", opposite: "take off", fill: "Put on your jacket; it’s cold outside.", class: "Phrasal verb", theme: "Daily life", def1: "to place clothing on your body", def2: "to start wearing something", sentence: "Put on your coat—it’s cold.", traduction: "Mets ton manteau — il fait froid." },
+ { english: "question", french: "question", syn1: "query", syn2: "inquiry", opposite: "", fill: "I have a quick question about the homework.", class: "Noun", theme: "School", def1: "a sentence that asks for information", def2: "something you ask to get an answer", sentence: "I have a quick question.", traduction: "J’ai une petite question." },
+ { english: "quiet", french: "calme", syn1: "silent", syn2: "peaceful", opposite: "noisy", fill: "Be quiet—the baby is sleeping.", class: "Adjective", theme: "General English", def1: "making little noise", def2: "without activity", sentence: "It’s so quiet in here.", traduction: "C’est tellement calme ici." },
+ { english: "read", french: "lire", syn1: "look at", syn2: "study", opposite: "", fill: "Read the instructions before you start.", class: "Verb", theme: "School", def1: "to look at", def2: "to study", sentence: "I read before going to sleep.", traduction: "Je lis avant de dormir." },
+ { english: "ready", french: "prêt", syn1: "prepared", syn2: "set", opposite: "", fill: "Wait for me, please—I’m not ready yet.", class: "Adjective", theme: "Daily life", def1: "prepared to do something", def2: "finished and available", sentence: "Are you ready to go?", traduction: "Tu es prêt à partir ?" },
+ { english: "receive", french: "recevoir", syn1: "get", syn2: "obtain", opposite: "", fill: "Did you receive my email?", class: "Verb", theme: "Communication", def1: "to get something given or sent", def2: "to experience something", sentence: "Did you receive my message?", traduction: "Tu as reçu mon message ?" },
+ { english: "remember", french: "se souvenir", syn1: "recall", syn2: "", opposite: "forget", fill: "Remember to lock the door.", class: "Verb", theme: "General English", def1: "to recall", def2: "to do this action", sentence: "Remember to lock the door.", traduction: "Pense à fermer la porte à clé." },
+ { english: "rest", french: "se reposer", syn1: "relax", syn2: "", opposite: "work", fill: "You should rest after a long day.", class: "Verb", theme: "General English", def1: "to relax", def2: "to do this action", sentence: "You should rest for a while.", traduction: "Tu devrais te reposer un moment." },
+ { english: "return", french: "revenir", syn1: "come back", syn2: "", opposite: "", fill: "Return the book to the library on Monday.", class: "Verb", theme: "General English", def1: "to come back", def2: "to do this action", sentence: "I’ll return the book tomorrow.", traduction: "Je rendrai le livre demain." },
+ { english: "room", french: "pièce", syn1: "space", syn2: "chamber", opposite: "", fill: "My room is on the second floor.", class: "Noun", theme: "Home", def1: "a part of a building", def2: "an area inside a house", sentence: "My room is upstairs.", traduction: "Ma chambre est à l’étage." },
+ { english: "run", french: "courir", syn1: "sprint", syn2: "jog", opposite: "walk", fill: "I run three times a week.", class: "Verb", theme: "General English", def1: "to sprint", def2: "to jog", sentence: "I run in the park on Sundays.", traduction: "Je cours au parc le dimanche." },
+ { english: "run out", french: "être à court de", syn1: "use up", syn2: "have none left", opposite: "", fill: "We always run out of milk, so we buy extra.", class: "Phrasal verb", theme: "General English", def1: "to have no more of something", def2: "to finish a supply", sentence: "We often run out of milk.", traduction: "On tombe souvent à court de lait." },
+ { english: "same", french: "même", syn1: "identical", syn2: "equal", opposite: "different", fill: "We chose the same answer.", class: "Adjective", theme: "General English", def1: "not different", def2: "exactly alike", sentence: "We have the same idea.", traduction: "On a la même idée." },
+ { english: "save", french: "économiser", syn1: "keep", syn2: "store", opposite: "", fill: "Save your work before you close the program.", class: "Verb", theme: "Money", def1: "to keep for later", def2: "to prevent loss", sentence: "I’m saving money for a trip.", traduction: "J’économise de l’argent pour un voyage." },
+ { english: "say", french: "dire", syn1: "speak", syn2: "state", opposite: "", fill: "Say it again—I didn’t hear you.", class: "Verb", theme: "Communication", def1: "to speak words", def2: "to express an idea", sentence: "What did you say?", traduction: "Qu’est-ce que tu as dit ?" },
+ { english: "school", french: "école", syn1: "academy", syn2: "college", opposite: "", fill: "The kids are at school.", class: "Noun", theme: "School", def1: "a place where you learn", def2: "an organization for education", sentence: "The kids are at school.", traduction: "Les enfants sont à l’école." },
+ { english: "sell", french: "vendre", syn1: "trade", syn2: "", opposite: "buy", fill: "They sell fresh bread every morning.", class: "Verb", theme: "Shopping", def1: "to trade", def2: "to do this action", sentence: "They sell fresh fruit here.", traduction: "Ils vendent des fruits frais ici." },
+ { english: "send", french: "envoyer", syn1: "dispatch", syn2: "mail", opposite: "", fill: "Send me the file when you’re ready.", class: "Verb", theme: "Communication", def1: "to make something go to someone", def2: "to transmit a message", sentence: "Send me the file when you can.", traduction: "Envoie-moi le fichier quand tu peux." },
+ { english: "set up", french: "mettre en place", syn1: "establish", syn2: "arrange", opposite: "", fill: "Set up your account before you log in.", class: "Phrasal verb", theme: "Work", def1: "to start or create something", def2: "to prepare equipment", sentence: "We need to set up the meeting room.", traduction: "On doit installer la salle de réunion." },
+ { english: "shop", french: "faire du shopping", syn1: "buy", syn2: "purchase", opposite: "", fill: "I need to shop for groceries.", class: "Verb", theme: "Shopping", def1: "to buy", def2: "to purchase", sentence: "I need to shop for groceries.", traduction: "Je dois faire les courses." },
+ { english: "sit", french: "s'asseoir", syn1: "take a seat", syn2: "", opposite: "stand", fill: "Sit here—this seat is free.", class: "Verb", theme: "General English", def1: "to take a seat", def2: "to do this action", sentence: "Please sit here.", traduction: "Assieds-toi ici, s’il te plaît." },
+ { english: "sit down", french: "s'asseoir", syn1: "take a seat", syn2: "", opposite: "stand up", fill: "Sit down and take a deep breath.", class: "Phrasal verb", theme: "General English", def1: "to take a seat", def2: "to do this action", sentence: "Sit down and relax.", traduction: "Assieds-toi et détends-toi." },
+ { english: "sleep", french: "dormir", syn1: "rest", syn2: "doze", opposite: "wake up", fill: "I can’t sleep when it’s noisy.", class: "Verb", theme: "General English", def1: "to rest", def2: "to doze", sentence: "I can’t sleep when it’s noisy.", traduction: "Je n’arrive pas à dormir quand il y a du bruit." },
+ { english: "small", french: "petit", syn1: "little", syn2: "tiny", opposite: "big", fill: "This room is a bit small for a meeting.", class: "Adjective", theme: "General English", def1: "not big", def2: "short in size or amount", sentence: "The room is a bit small.", traduction: "La pièce est un peu petite." },
+ { english: "smile", french: "sourire", syn1: "grin", syn2: "", opposite: "frown", fill: "Smile for the photo!", class: "Verb", theme: "General English", def1: "to grin", def2: "to do this action", sentence: "She always smiles when she sees him.", traduction: "Elle sourit toujours quand elle le voit." },
+ { english: "speak", french: "parler", syn1: "talk", syn2: "", opposite: "", fill: "Speak slowly—I’m still learning.", class: "Verb", theme: "Communication", def1: "to talk", def2: "to do this action", sentence: "Do you speak French?", traduction: "Tu parles français ?" },
+ { english: "spend", french: "dépenser", syn1: "use up", syn2: "pay", opposite: "", fill: "Don’t spend all your money at once.", class: "Verb", theme: "Money", def1: "to use money to buy", def2: "to use time doing something", sentence: "I don’t want to spend too much.", traduction: "Je ne veux pas dépenser trop." },
+ { english: "stand", french: "se tenir debout", syn1: "rise", syn2: "be upright", opposite: "sit", fill: "Please stand behind the line.", class: "Verb", theme: "General English", def1: "to rise", def2: "to be upright", sentence: "Please stand behind the line.", traduction: "Reste debout derrière la ligne, s’il te plaît." },
+ { english: "stand up", french: "se lever", syn1: "rise", syn2: "", opposite: "sit down", fill: "Stand up when your name is called.", class: "Phrasal verb", theme: "General English", def1: "to rise", def2: "to do this action", sentence: "Stand up when the teacher arrives.", traduction: "Levez-vous quand le professeur arrive." },
+ { english: "start", french: "commencer", syn1: "begin", syn2: "", opposite: "finish", fill: "Start with the easiest question.", class: "Verb", theme: "General English", def1: "to begin", def2: "to do this action", sentence: "Let’s start the meeting.", traduction: "Commençons la réunion." },
+ { english: "stay", french: "rester", syn1: "remain", syn2: "", opposite: "leave", fill: "Stay a little longer—we’re having fun.", class: "Verb", theme: "General English", def1: "to remain", def2: "to do this action", sentence: "You can stay here if you want.", traduction: "Tu peux rester ici si tu veux." },
+ { english: "stop", french: "s'arrêter", syn1: "halt", syn2: "cease", opposite: "start", fill: "Stop the car at the next corner.", class: "Verb", theme: "General English", def1: "to end an action", def2: "to prevent something from continuing", sentence: "Stop talking for a second.", traduction: "Arrête de parler une seconde." },
+ { english: "student", french: "étudiant", syn1: "learner", syn2: "pupil", opposite: "", fill: "Every student needs practice.", class: "Noun", theme: "School", def1: "a person who studies", def2: "someone in a class", sentence: "She is a hardworking student.", traduction: "C’est une étudiante travailleuse." },
+ { english: "study", french: "étudier", syn1: "learn", syn2: "revise", opposite: "", fill: "I need to study for my exam.", class: "Verb", theme: "School", def1: "to learn", def2: "to revise", sentence: "I study best in the morning.", traduction: "J’étudie mieux le matin." },
+ { english: "take", french: "prendre", syn1: "grab", syn2: "pick", opposite: "", fill: "Take a deep breath and relax.", class: "Verb", theme: "General English", def1: "to pick something up", def2: "to accept or use something", sentence: "Take your time—no rush.", traduction: "Prends ton temps — pas de stress." },
+ { english: "take off", french: "enlever (un vêtement)", syn1: "remove", syn2: "undress", opposite: "put on", fill: "Take off your shoes at the door.", class: "Phrasal verb", theme: "Daily life", def1: "to remove clothing", def2: "to leave the ground (plane)", sentence: "Take off your shoes, please.", traduction: "Enlève tes chaussures, s’il te plaît." },
+ { english: "talk", french: "parler", syn1: "speak", syn2: "chat", opposite: "", fill: "Can we talk for a minute in private?", class: "Verb", theme: "Communication", def1: "to speak", def2: "to chat", sentence: "Can we talk for a minute?", traduction: "On peut parler une minute ?" },
+ { english: "tea", french: "thé", syn1: "brew", syn2: "tea drink", opposite: "", fill: "Would you like tea or coffee?", class: "Noun", theme: "Food", def1: "a drink made from leaves", def2: "a cup of tea", sentence: "Would you like some tea?", traduction: "Tu veux du thé ?" },
+ { english: "teach", french: "enseigner", syn1: "instruct", syn2: "train", opposite: "", fill: "I want to teach English online someday.", class: "Verb", theme: "School", def1: "to help someone learn", def2: "to give lessons", sentence: "She teaches English online.", traduction: "Elle enseigne l’anglais en ligne." },
+ { english: "teacher", french: "professeur", syn1: "instructor", syn2: "educator", opposite: "", fill: "The teacher explained it clearly.", class: "Noun", theme: "School", def1: "a person who teaches", def2: "someone who gives lessons", sentence: "The teacher explained it clearly.", traduction: "Le professeur l’a expliqué clairement." },
+ { english: "text", french: "envoyer un message", syn1: "message", syn2: "", opposite: "", fill: "Text me your address.", class: "Verb", theme: "Communication", def1: "to message", def2: "to do this action", sentence: "Text me when you arrive.", traduction: "Envoie-moi un message quand tu arrives." },
+ { english: "think", french: "penser", syn1: "consider", syn2: "believe", opposite: "", fill: "Think before you speak.", class: "Verb", theme: "General English", def1: "to use your mind", def2: "to have an opinion", sentence: "I think you’re right.", traduction: "Je pense que tu as raison." },
+ { english: "thirsty", french: "assoiffé", syn1: "dry", syn2: "needing water", opposite: "", fill: "I’m thirsty—do we have any water?", class: "Adjective", theme: "Food", def1: "needing a drink", def2: "wanting water", sentence: "I’m thirsty—can I get some water?", traduction: "J’ai soif — je peux avoir de l’eau ?" },
+ { english: "ticket", french: "billet", syn1: "pass", syn2: "entry", opposite: "", fill: "Don’t forget your ticket at the entrance.", class: "Noun", theme: "Travel", def1: "a paper or digital pass", def2: "proof you paid", sentence: "Don’t forget your ticket.", traduction: "N’oublie pas ton billet." },
+ { english: "time", french: "temps", syn1: "moment", syn2: "period", opposite: "", fill: "Do you have time to talk today?", class: "Noun", theme: "Time", def1: "what is measured in seconds and hours", def2: "the time when something happens", sentence: "Do you have time this afternoon?", traduction: "Tu as le temps cet après-midi ?" },
+ { english: "tired", french: "fatigué", syn1: "sleepy", syn2: "exhausted", opposite: "", fill: "I’m tired, so I’m going to bed early.", class: "Adjective", theme: "Daily life", def1: "needing rest", def2: "lacking energy", sentence: "I’m tired—I need a break.", traduction: "Je suis fatigué — j’ai besoin d’une pause." },
+ { english: "travel", french: "voyager", syn1: "journey", syn2: "go abroad", opposite: "", fill: "I want to travel more this year.", class: "Verb", theme: "Travel", def1: "to journey", def2: "to go abroad", sentence: "I love to travel in spring.", traduction: "J’adore voyager au printemps." },
+ { english: "try", french: "essayer", syn1: "attempt", syn2: "test", opposite: "", fill: "Try this cake—it’s delicious.", class: "Verb", theme: "General English", def1: "to make an effort", def2: "to use something to see if it works", sentence: "Try again—you’re almost there.", traduction: "Essaie encore — tu y es presque." },
+ { english: "turn down", french: "baisser / refuser", syn1: "reduce", syn2: "refuse", opposite: "turn up", fill: "Turn down the music—I’m trying to study.", class: "Phrasal verb", theme: "General English", def1: "to reduce volume or level", def2: "to refuse an offer", sentence: "Please turn down the music.", traduction: "Baisse la musique, s’il te plaît." },
+ { english: "turn off", french: "éteindre", syn1: "switch off", syn2: "", opposite: "turn on", fill: "Turn off the lights when you leave.", class: "Phrasal verb", theme: "General English", def1: "to switch off", def2: "to do this action", sentence: "Turn off the lights when you leave.", traduction: "Éteins les lumières quand tu pars." },
+ { english: "turn on", french: "allumer", syn1: "switch on", syn2: "", opposite: "turn off", fill: "Turn on the heating—it’s freezing.", class: "Phrasal verb", theme: "General English", def1: "to switch on", def2: "to do this action", sentence: "Can you turn on the TV?", traduction: "Tu peux allumer la télé ?" },
+ { english: "turn up", french: "augmenter / arriver", syn1: "increase", syn2: "appear", opposite: "turn down", fill: "Turn up the volume a little—I can’t hear it.", class: "Phrasal verb", theme: "General English", def1: "to increase volume or level", def2: "to arrive unexpectedly", sentence: "Turn up the volume a little.", traduction: "Monte un peu le volume." },
+ { english: "umbrella", french: "parapluie", syn1: "brolly", syn2: "", opposite: "", fill: "Take an umbrella; it might rain.", class: "Noun", theme: "Weather", def1: "a brolly", def2: "a thing used in everyday life", sentence: "Take an umbrella—it might rain.", traduction: "Prends un parapluie — il pourrait pleuvoir." },
+ { english: "understand", french: "comprendre", syn1: "get", syn2: "grasp", opposite: "", fill: "I understand the idea, but not the details.", class: "Verb", theme: "General English", def1: "to know the meaning", def2: "to realize why something happens", sentence: "I don’t understand this part.", traduction: "Je ne comprends pas cette partie." },
+ { english: "use", french: "utiliser", syn1: "employ", syn2: "apply", opposite: "", fill: "Use a towel to dry your hands.", class: "Verb", theme: "General English", def1: "to do something with a tool", def2: "to make use of", sentence: "You can use my computer.", traduction: "Tu peux utiliser mon ordinateur." },
+ { english: "vegetable", french: "légume", syn1: "veg", syn2: "greens", opposite: "", fill: "Try to add a vegetable to every meal.", class: "Noun", theme: "Food", def1: "plant food like carrots", def2: "food from plants", sentence: "Try to eat a vegetable with dinner.", traduction: "Essaie de manger un légume au dîner." },
+ { english: "wait", french: "attendre", syn1: "pause", syn2: "", opposite: "", fill: "Wait here—I’ll be right back.", class: "Verb", theme: "General English", def1: "to pause", def2: "to do this action", sentence: "Wait here for me.", traduction: "Attends ici pour moi." },
+ { english: "wake up", french: "se réveiller", syn1: "get up", syn2: "", opposite: "fall asleep", fill: "I wake up early on weekdays.", class: "Phrasal verb", theme: "General English", def1: "to get up", def2: "to do this action", sentence: "I wake up at 7 every day.", traduction: "Je me réveille à 7 h tous les jours." },
+ { english: "walk", french: "marcher", syn1: "stroll", syn2: "", opposite: "run", fill: "Let’s walk home—it’s not far.", class: "Verb", theme: "General English", def1: "to stroll", def2: "to do this action", sentence: "Let’s walk home.", traduction: "Rentrons à pied." },
+ { english: "want", french: "vouloir", syn1: "wish", syn2: "", opposite: "", fill: "I want a coffee, please.", class: "Verb", theme: "General English", def1: "to wish", def2: "to do this action", sentence: "I want a coffee, please.", traduction: "Je voudrais un café, s’il vous plaît." },
+ { english: "wash", french: "laver", syn1: "clean", syn2: "", opposite: "", fill: "Wash your hands before eating.", class: "Verb", theme: "Daily life", def1: "to clean", def2: "to do this action", sentence: "Wash your hands before eating.", traduction: "Lave-toi les mains avant de manger." },
+ { english: "watch", french: "regarder", syn1: "observe", syn2: "", opposite: "", fill: "Do you want to watch a movie tonight?", class: "Verb", theme: "General English", def1: "to observe", def2: "to do this action", sentence: "We watch a movie on Fridays.", traduction: "On regarde un film le vendredi." },
+ { english: "water", french: "eau", syn1: "drink", syn2: "H2O", opposite: "", fill: "Can I have some water, please?", class: "Noun", theme: "Food", def1: "a clear liquid", def2: "something you drink", sentence: "Could I have some water, please?", traduction: "Je peux avoir de l’eau, s’il vous plaît ?" },
+ { english: "week", french: "semaine", syn1: "seven days", syn2: "workweek", opposite: "", fill: "This week feels busy already.", class: "Noun", theme: "Time", def1: "a period of seven days", def2: "the days you work or study", sentence: "This week is really busy.", traduction: "Cette semaine est vraiment chargée." },
+ { english: "win", french: "gagner", syn1: "succeed", syn2: "triumph", opposite: "lose", fill: "We need one more point to win.", class: "Verb", theme: "General English", def1: "to be the best in a contest", def2: "to achieve a success", sentence: "I hope we win this match.", traduction: "J’espère qu’on gagnera ce match." },
+ { english: "window", french: "fenêtre", syn1: "opening", syn2: "pane", opposite: "", fill: "Please close the window—it’s windy.", class: "Noun", theme: "Home", def1: "an opening in a wall with glass", def2: "something you look through", sentence: "Open the window for some air.", traduction: "Ouvre la fenêtre pour aérer." },
+ { english: "work", french: "travailler", syn1: "labor", syn2: "", opposite: "rest", fill: "I work from home on Mondays.", class: "Verb", theme: "Work", def1: "to labor", def2: "to do this action", sentence: "I work from home on Mondays.", traduction: "Je travaille de chez moi le lundi." },
+ { english: "worry", french: "s'inquiéter", syn1: "fear", syn2: "be concerned", opposite: "", fill: "Don’t worry—it will work out.", class: "Verb", theme: "General English", def1: "to feel anxious about", def2: "to think about problems", sentence: "Don’t worry, everything is fine.", traduction: "Ne t’inquiète pas, tout va bien." },
+ { english: "write", french: "écrire", syn1: "note", syn2: "compose", opposite: "", fill: "Write your name at the top of the page.", class: "Verb", theme: "School", def1: "to note", def2: "to compose", sentence: "Please write your name here.", traduction: "Écris ton nom ici, s’il te plaît." },
+ { english: "year", french: "année", syn1: "twelve months", syn2: "yearly period", opposite: "", fill: "This year has gone so fast.", class: "Noun", theme: "Time", def1: "a period of twelve months", def2: "the time from January to December", sentence: "This year went so fast.", traduction: "Cette année est passée si vite." },
+ { english: "yell", french: "crier", syn1: "scream", syn2: "shout", opposite: "whisper", fill: "Don’t yell at me—I’m right here.", class: "Verb", theme: "General English", def1: "to scream", def2: "to shout", sentence: "Don’t yell—I can hear you.", traduction: "Ne crie pas — je t’entends." },
+ { english: "young", french: "jeune", syn1: "youthful", syn2: "new", opposite: "", fill: "He’s too young to drive.", class: "Adjective", theme: "People", def1: "not old", def2: "having little age", sentence: "She looks very young.", traduction: "Elle a l’air très jeune." }
+];
+  </script>
+<!-- TAB_TITLE_PATCH_V1: set browser tab title from QUIZ_CONFIG.text.title -->
+<script>
+(function(){
+  function nl(s){ return (s==null? '' : String(s)).replace(/\\n/g,'\n'); }
+  function setTitle(){
+    try{
+      var t = (typeof QUIZ_CONFIG !== 'undefined' && QUIZ_CONFIG.text && QUIZ_CONFIG.text.title) ? QUIZ_CONFIG.text.title : '';
+      if(t && String(t).trim()) document.title = nl(t);
+    }catch(e){}
+  }
+  // Run now (constants already exist when this script is inserted after them)
+  setTitle();
+  // Also run once DOM is ready, and retry briefly (covers generators that upsert later)
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setTitle);
+  setTimeout(setTitle, 0);
+  setTimeout(setTitle, 50);
+})();
+</script>
+
+
+  <script>
+  // =========================================================
+  // QUIZ ENGINE (CONFIG-DRIVEN)
+  // Uses: QUIZ_CONFIG (roles+text+settings), LABEL_CONFIG (per label UI), DATA (dataset)
+  // =========================================================
+
+  function shuffle(arr){
+    const a = arr.slice();
+    for(let i=a.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i],a[j]]=[a[j],a[i]];
+    }
+    return a;
+  }
+
+  function getFieldsByRole(role){
+    try{
+      return Object.keys(QUIZ_CONFIG.fields||{}).filter(k => (QUIZ_CONFIG.fields[k].roles||[]).includes(role));
+    }catch(e){
+      return [];
+    }
+  }
+
+  function safeText(t){
+    return (t===null||t===undefined) ? "" : String(t);
+  }
+
+  // =========================================================
+  // Dynamic placeholder support (template contract)
+  // Any {{fieldName}} from the current DATA row must resolve in feedback text, etc.
+  // =========================================================
+  function toSafeKey(k){
+    return safeText(k)
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g,'_')
+      .replace(/[^a-z0-9_]/g,'_')
+      .replace(/_+/g,'_')
+      .replace(/^_+|_+$/g,'');
+  }
+
+  function applyTemplate(t, ctx){
+    var s = safeText(t);
+    if(!s || s.indexOf('{{') === -1) return s;
+    ctx = ctx || {};
+    return s.replace(/\{\{\s*([^}]+?)\s*\}\}/g, function(_, key){
+      key = safeText(key).trim();
+      if(!key) return '';
+      if(Object.prototype.hasOwnProperty.call(ctx, key)) return safeText(ctx[key]);
+      var sk = toSafeKey(key);
+      if(sk && Object.prototype.hasOwnProperty.call(ctx, sk)) return safeText(ctx[sk]);
+      var lk = key.toLowerCase();
+      if(Object.prototype.hasOwnProperty.call(ctx, lk)) return safeText(ctx[lk]);
+      return '';
+    });
+  }
+
+  // Expose for generator-injected wrappers (if any) and for internal use
+  window.applyTemplate = window.applyTemplate || applyTemplate;
+  window.__QUIZ_CTX = window.__QUIZ_CTX || {};
+
+
+  // DOM refs
+  const progressFillEl = document.getElementById("progressFill");
+  const questionIndexEl = document.getElementById("questionIndex");
+  const questionTypeEl = document.getElementById("questionType");
+  const promptLabelEl = document.getElementById("promptLabel");
+  const promptTextEl = document.getElementById("promptText");
+  const promptHelperEl = document.getElementById("promptHelper");
+  const optionsContainer = document.getElementById("optionsContainer");
+
+function chooseLayoutClass(numOptions){
+  // 1 -> full width
+  // 2 -> 2 columns
+  // 3 -> 3 columns (2 columns on <=900px)
+  // 4 -> 2x2
+  // 5 -> 3 + 2 (top row 3)
+  // Mobile override handled by CSS @media(max-width:640px)
+  if(numOptions <= 1) return 'layout-1';
+  if(numOptions === 2) return 'layout-2';
+  if(numOptions === 3) return (window.innerWidth <= 900 ? 'layout-2' : 'layout-3');
+  if(numOptions === 4) return 'layout-4';
+  if(numOptions === 5) return (window.innerWidth <= 900 ? 'layout-4' : 'layout-5');
+  return (window.innerWidth <= 900 ? 'layout-2' : 'layout-3');
+}
+
+function applyOptionsLayout(numOptions){
+  try{
+    var cls = chooseLayoutClass(numOptions);
+    optionsContainer.className = 'options ' + cls;
+  }catch(e){
+    applyOptionsLayout(numOptions);
+  }
+
+// Re-apply option layout when viewport changes (mobile/tablet/laptop)
+window.addEventListener("resize", function(){
+  try{ applyOptionsLayout(numOptions); }catch(e){}
+});
+
+}
+
+  const feedbackEl = document.getElementById("feedback");
+  const prevBtn = document.getElementById("prevBtn");
+  const nextBtn = document.getElementById("nextBtn");
+  const restartBtn = document.getElementById("restartBtn");
+  const progressTextEl = document.getElementById("progressText");
+  const scorePillEl = document.getElementById("scorePill");
+  const recapEl = document.getElementById("recap");
+  const recapListEl = document.getElementById("recapList");
+  const pillTextEl = document.getElementById("pillText");
+
+  var questionOrder = [];
+  var currentIndex = 0;
+  var score = 0;
+  var answeredCount = 0;
+  var history = [];
+  var totalQuestions = 0;
+
+  function pickPromptField(entry, promptFields, answerField){
+    const candidates = shuffle(promptFields);
+    for(const f of candidates){
+      if(f === answerField) continue;
+      const v = safeText(entry[f]).trim();
+      const ans = safeText(entry[answerField]).trim();
+      if(v && v.toLowerCase() !== ans.toLowerCase()) return f;
+    }
+    return promptFields.find(f => safeText(entry[f]).trim()) || answerField;
+  }
+
+  function buildOptions(correct, allAnswers, numOptions){
+    const wrongPool = shuffle(allAnswers.filter(a => a && a.toLowerCase() !== correct.toLowerCase()));
+    const wrong = wrongPool.slice(0, Math.max(0, numOptions - 1));
+    return shuffle([correct, ...wrong]);
+  }
+
+  function renderRecap(answerField){
+    recapListEl.innerHTML = "";
+    if(answeredCount === 0){
+      recapEl.style.display = "none";
+      return;
+    }
+    recapEl.style.display = "block";
+
+    history.forEach((h, idx) => {
+      if(!h) return;
+      const div = document.createElement("div");
+      div.className = "recap-item";
+      div.innerHTML = `
+        <div class="q-label">Q${idx+1} – ${h.uiLabel}</div>
+        <div class="prompt">${h.promptValue}</div>
+        <div class="answer-line">
+          <span class="${h.isCorrect ? "tag-correct" : "tag-incorrect"}">
+            Your answer: ${h.chosen ?? "—"}
+          </span>
+          <span class="tag-neutral">Correct: ${h.correct}</span>
+        </div>
+      `;
+      recapListEl.appendChild(div);
+    });
+  }
+
+  function updateProgress(){
+    progressTextEl.textContent = `Answered ${answeredCount} / ${totalQuestions}`;
+    scorePillEl.textContent = `Score: ${score} / ${totalQuestions}`;
+    const denom = Math.max(1, totalQuestions - 1);
+    const pct = (currentIndex / denom) * 100;
+    progressFillEl.style.width = `${Math.max(0, Math.min(100, pct))}%`;
+  }
+
+  function updateNavButtons(){
+    prevBtn.disabled = currentIndex === 0;
+    nextBtn.disabled = currentIndex >= totalQuestions - 1;
+  }
+
+  function setFeedback(text, kind){
+    try{
+      if(typeof window.applyTemplate === "function"){
+        text = window.applyTemplate(text, window.__QUIZ_CTX || {});
+      }
+    }catch(e){}
+    feedbackEl.textContent = text;
+    feedbackEl.className = "feedback" + (kind ? " " + kind : "");
+  }
+
+  function loadQuestion(answerField, promptFields, numOptions, texts){
+    const entryIndex = questionOrder[currentIndex];
+    const entry = DATA[entryIndex];
+
+    const promptField = pickPromptField(entry, promptFields, answerField);
+    const promptValue = safeText(entry[promptField]);
+    let promptValueDisplay = promptValue;
+    const correct = safeText(entry[answerField]); safeText(entry[answerField]);
+
+    // label mapping from field -> labelKey -> LABEL_CONFIG
+    const fieldDef = (QUIZ_CONFIG.fields||{})[promptField] || {};
+    const labelKey = fieldDef.label || promptField;
+    const labelCfg = (LABEL_CONFIG||{})[labelKey] || { uiLabel: labelKey, uiQuestion: (texts.prompt_helper||"") };
+
+    const uiLabel = labelCfg.uiLabel || labelKey;
+    const uiQuestion = labelCfg.uiQuestion || texts.prompt_helper || "";
+
+    
+    // Build template context for dynamic placeholders
+    try{
+      var maskAnswer = !!labelCfg.maskAnswer;
+      if(maskAnswer && typeof maskAnswerInText === 'function'){
+        promptValueDisplay = maskAnswerInText(promptValueDisplay, correct);
+      }
+      window.__QUIZ_CTX = Object.assign({}, entry, {
+        answer: correct,
+        prompt: promptValueDisplay,
+        promptText: promptValueDisplay,
+        promptHelper: uiQuestion,
+        uiLabel: uiLabel,
+        uiQuestion: uiQuestion,
+        maskAnswer: maskAnswer,
+        questionIndex: (currentIndex + 1) + ' / ' + totalQuestions,
+        score: score,
+        total: totalQuestions,
+        answerField: answerField,
+        promptField: promptField,
+        labelKey: labelKey
+      });
+    }catch(e){}
+// header
+    questionIndexEl.textContent = `Question ${currentIndex + 1} / ${totalQuestions}`;
+    questionTypeEl.textContent = uiLabel;
+    // prompt label element is optional (hidden by default)
+    if(promptLabelEl) promptLabelEl.textContent = uiLabel;
+
+    promptHelperEl.textContent = uiQuestion;
+    promptTextEl.textContent = (typeof promptValueDisplay !== "undefined" ? promptValueDisplay : promptValue);
+
+    // options
+    const allAnswers = DATA.map(r => safeText(r[answerField])).filter(Boolean);
+    const options = buildOptions(correct, allAnswers, numOptions);
+
+    optionsContainer.innerHTML = "";
+    applyOptionsLayout(numOptions);
+    setFeedback("", "");
+
+    options.forEach(opt => {
+      const btn = document.createElement("button");
+      btn.className = "option-btn";
+      btn.innerHTML = `<span class="label">${opt}</span>`;
+      btn.addEventListener("click", () => handleClick(opt, correct, uiLabel, promptValue, options));
+      optionsContainer.appendChild(btn);
+    });
+
+    // restore previous answer (if navigating)
+    const dataIndex = questionOrder[currentIndex];
+  if (history[dataIndex]) { restorePreviousAnswer(history[dataIndex], correct); }
+
+    updateNavButtons();
+    updateProgress();
+  }
+
+  function restorePreviousAnswer(h, correct){
+    try{ if(h && h.ctx) window.__QUIZ_CTX = h.ctx; }catch(e){}
+    const buttons = [...document.querySelectorAll(".option-btn")];
+    buttons.forEach(b => b.classList.remove("selected","correct","incorrect"));
+
+    const chosen = h.chosen;
+    const chosenBtn = buttons.find(b => b.textContent.trim() === chosen);
+    if(chosenBtn){
+      chosenBtn.classList.add("selected");
+      if(h.isCorrect){
+        chosenBtn.classList.add("correct");
+        setFeedback(QUIZ_CONFIG.text?.correct || "Correct!", "correct");
+      } else {
+        chosenBtn.classList.add("incorrect");
+        const msg = (QUIZ_CONFIG.text?.incorrect || "Incorrect. The correct answer is {{answer}}.")
+          ;
+        setFeedback(msg, "incorrect");
+        const correctBtn = buttons.find(b => b.textContent.trim() === correct);
+        if(correctBtn) correctBtn.classList.add("correct");
+      }
+    }
+  }
+
+  function handleClick(choice, correct, uiLabel, promptValue, options){
+    const dataIndex = questionOrder[currentIndex];
+  if (history[dataIndex] && typeof history[dataIndex].isCorrect === "boolean") return;
+
+    const isCorrect = choice === correct;
+    const buttons = [...document.querySelectorAll(".option-btn")];
+    buttons.forEach(b => b.classList.remove("selected","correct","incorrect"));
+
+    const chosenBtn = buttons.find(b => b.textContent.trim() === choice);
+    if(chosenBtn) chosenBtn.classList.add("selected");
+
+    if(isCorrect){
+      if(chosenBtn) chosenBtn.classList.add("correct");
+      score += 1;
+      setFeedback(QUIZ_CONFIG.text?.correct || "Correct!", "correct");
+    } else {
+      if(chosenBtn) chosenBtn.classList.add("incorrect");
+      const msg = (QUIZ_CONFIG.text?.incorrect || "Incorrect. The correct answer is {{answer}}.")
+        ;
+      setFeedback(msg, "incorrect");
+      const correctBtn = buttons.find(b => b.textContent.trim() === correct);
+      if(correctBtn) correctBtn.classList.add("correct");
+    }
+
+    answeredCount += 1;
+    history[dataIndex] = {
+      uiLabel,
+      promptValue: (typeof promptValueDisplay !== 'undefined' ? promptValueDisplay : promptValue),
+      correct,
+      chosen: choice,
+      isCorrect,
+      options,
+      ctx: (function(){
+        try{ return Object.assign({}, window.__QUIZ_CTX || {}, { chosen: choice, isCorrect: isCorrect, score: score, total: totalQuestions }); }catch(e){ return null; }
+      })()
+    };
+    updateProgress();
+  }
+
+  function startQuiz(){
+    const answerFields = getFieldsByRole("answer");
+    const promptFields = getFieldsByRole("prompt");
+
+    const answerField = answerFields[0] || "term";
+    const numOptions = (QUIZ_CONFIG.settings && QUIZ_CONFIG.settings.num_options) ? QUIZ_CONFIG.settings.num_options : 4;
+    const maxQuestions = (QUIZ_CONFIG.settings && QUIZ_CONFIG.settings.num_questions) ? QUIZ_CONFIG.settings.num_questions : DATA.length;
+
+    totalQuestions = Math.max(0, Math.min(maxQuestions, DATA.length));
+
+    // update pill
+    if(pillTextEl){
+      pillTextEl.textContent = `${totalQuestions} Questions · Multiple Choice`;
+    }
+
+    if(!Array.isArray(DATA) || DATA.length === 0 || totalQuestions === 0){
+      // graceful empty state
+      questionIndexEl.textContent = "No questions available";
+      questionTypeEl.textContent = "";
+      promptTextEl.textContent = "";
+      promptHelperEl.textContent = "Please inject a dataset into this quiz HTML.";
+      optionsContainer.innerHTML = "";
+    applyOptionsLayout(numOptions);
+      recapEl.style.display = "none";
+      progressFillEl.style.width = "0%";
+      progressTextEl.textContent = "Answered 0 / 0";
+      scorePillEl.textContent = "Score: 0 / 0";
+      prevBtn.disabled = true;
+      nextBtn.disabled = true;
+      return;
+    }
+
+    const indices = DATA.map((_, i) => i);
+    questionOrder = shuffle(indices).slice(0, totalQuestions);
+
+    currentIndex = 0;
+    score = 0;
+    answeredCount = 0;
+    history = [];
+    recapEl.style.display = "none";
+    progressFillEl.style.width = "0%";
+
+    const texts = QUIZ_CONFIG.text || {};
+
+    // navigation
+    prevBtn.onclick = () => {
+      if(currentIndex > 0){
+        currentIndex -= 1;
+        loadQuestion(answerField, promptFields, numOptions, texts);
+      }
+    };
+    nextBtn.onclick = () => {
+      if(currentIndex < totalQuestions - 1){
+        currentIndex += 1;
+        loadQuestion(answerField, promptFields, numOptions, texts);
+      }
+    };
+    restartBtn.onclick = () => { history = {}; answeredCount = 0; score = 0; quizCompleted = false; startQuiz(); };
+
+    loadQuestion(answerField, promptFields, numOptions, texts);
+  }
+
+  // End-of-quiz recap renderer (end only)
+function renderFinalRecap(){
+  recapListEl.innerHTML = "";
+  if(answeredCount < totalQuestions){
+    recapEl.style.display = "none";
+    return;
+  }
+  recapEl.style.display = "block";
+  history.forEach((h, idx) => {
+    if(!h) return;
+    const div = document.createElement("div");
+    div.className = "recap-item";
+    div.innerHTML = `
+      <div class="q-label">Q${idx + 1} – ${h.uiLabel}</div>
+      <div class="prompt">${h.promptValue}</div>
+      <div class="answer-line">
+        <span class="${h.isCorrect ? "tag-correct" : "tag-incorrect"}">
+          Your answer: ${h.chosen ?? "—"}
+        </span>
+        <span class="tag-neutral">Correct: ${h.correct}</span>
+      </div>
+    `;
+    recapListEl.appendChild(div);
+  });
+}
+
+// Start
+
+  startQuiz();
+  </script>
+
+<!-- RECAP_PATCH: Always-visible recap that does NOT change the core engine or constants block. -->
+<script>
+(function(){
+  try{
+    // Grab DOM
+    var recapEl = document.getElementById('recap');
+    var recapListEl = document.getElementById('recapList');
+    if(!recapEl || !recapListEl) return;
+
+    // Always show recap container (user requested)
+    recapEl.style.display = 'block';
+
+    // Helpers
+    function safeText(t){ return (t===null || t===undefined) ? '' : String(t); }
+
+    function applyTpl(t, ctx){
+      try{
+        if(typeof window.applyTemplate === 'function') return window.applyTemplate(t, ctx || {});
+      }catch(e){}
+      return safeText(t);
+    }
+
+    function getHistoryItems(){
+      // Robust: supports history keyed by quiz index OR by DATA index (dataIndex)
+      var history = window.history; // may be shadowed; fallback below
+      // In this template, history is a var in global scope, not window.history (browser history). So use eval-safe access.
+      // We'll try to read from global var via window.__quiz_history__ indirection set below.
+      var h = window.__quiz_history__;
+      var order = window.__quiz_questionOrder__;
+
+      var items = [];
+      var seen = {};
+
+      if(Array.isArray(order) && order.length){
+        for(var qi=0; qi<order.length; qi++){
+          var dataIndex = order[qi];
+          var entry = null;
+          if(h && (typeof dataIndex !== 'undefined') && h[dataIndex]) entry = h[dataIndex];
+          if(!entry && h && h[qi]) entry = h[qi];
+          if(entry){
+            items.push({q: qi+1, h: entry});
+            seen[dataIndex] = true;
+            seen[qi] = true;
+          }
+        }
+      }
+
+      // Fallback: include any remaining history entries
+      if(h){
+        if(Array.isArray(h)){
+          for(var i=0;i<h.length;i++){
+            if(seen[i]) continue;
+            if(h[i]) items.push({q: items.length+1, h: h[i]});
+          }
+        } else if(typeof h === 'object'){
+          for(var k in h){
+            if(!Object.prototype.hasOwnProperty.call(h,k)) continue;
+            if(seen[k]) continue;
+            if(h[k]) items.push({q: items.length+1, h: h[k]});
+          }
+        }
+      }
+
+      return items;
+    }
+
+    function renderRecapPatched(){
+      recapListEl.innerHTML = '';
+      var items = getHistoryItems();
+      if(!items.length){
+        var d0 = document.createElement('div');
+        d0.className = 'recap-item';
+        d0.innerHTML = '<div class="q-label">No answers yet</div><div class="prompt">Answer questions to populate the recap.</div>';
+        recapListEl.appendChild(d0);
+        return;
+      }
+
+      for(var i=0;i<items.length;i++){
+        var qnum = items[i].q;
+        var h = items[i].h || {};
+        var div = document.createElement('div');
+        div.className = 'recap-item';
+
+        var ctx = h.ctx || window.__QUIZ_CTX || {};
+        var promptDisp = applyTpl(h.promptValue, ctx);
+        var chosenDisp = applyTpl((h.chosen==null ? '—' : h.chosen), ctx);
+        var correctDisp = applyTpl((h.correct==null ? '' : h.correct), ctx);
+
+        var row = '';
+        row += '<div class="q-label">Q' + qnum + ' – ' + safeText(h.uiLabel) + '</div>';
+        row += '<div class="prompt">' + promptDisp + '</div>';
+        row += '<div class="answer-line">';
+        row += '<span class="' + (h.isCorrect ? 'tag-correct' : 'tag-incorrect') + '">Your answer: ' + chosenDisp + '</span>';
+        row += '<span class="tag-neutral">Correct: ' + correctDisp + '</span>';
+        row += '</div>';
+        div.innerHTML = row;
+        recapListEl.appendChild(div);
+      }
+    }
+
+    // ---- Hook into the engine without modifying it ----
+    // The engine uses global vars (questionOrder/history) but declared with var, so not on window.
+    // We expose them by wrapping startQuiz/loadQuestion/handleClick when they exist.
+
+    function attachHooks(){
+      try{
+        if(typeof window.startQuiz === 'function' && !window.__recapPatchedStart){
+          var origStart = window.startQuiz;
+          window.startQuiz = function(){
+            var r = origStart.apply(this, arguments);
+            // try to read globals via eval in this scope
+            try{ window.__quiz_history__ = history; }catch(e){}
+            try{ window.__quiz_questionOrder__ = questionOrder; }catch(e){}
+            renderRecapPatched();
+            return r;
+          };
+          window.__recapPatchedStart = true;
+        }
+
+        if(typeof window.loadQuestion === 'function' && !window.__recapPatchedLoad){
+          var origLoad = window.loadQuestion;
+          window.loadQuestion = function(){
+            var r = origLoad.apply(this, arguments);
+            try{ window.__quiz_history__ = history; }catch(e){}
+            try{ window.__quiz_questionOrder__ = questionOrder; }catch(e){}
+            renderRecapPatched();
+            return r;
+          };
+          window.__recapPatchedLoad = true;
+        }
+
+        if(typeof window.handleClick === 'function' && !window.__recapPatchedClick){
+          var origClick = window.handleClick;
+          window.handleClick = function(){
+            var r = origClick.apply(this, arguments);
+            try{ window.__quiz_history__ = history; }catch(e){}
+            try{ window.__quiz_questionOrder__ = questionOrder; }catch(e){}
+            renderRecapPatched();
+            return r;
+          };
+          window.__recapPatchedClick = true;
+        }
+      }catch(e){}
+    }
+
+    // Attach now and also shortly after in case scripts load later
+    attachHooks();
+    setTimeout(attachHooks, 0);
+    setTimeout(attachHooks, 50);
+
+    // Initial render
+    renderRecapPatched();
+  }catch(e){}
+})();
+</script>
+
+
+<!-- RECAP_PATCH_V5 (clears on restart/menu, reuses saved options for wrong-answer restore) -->
+<script>
+(function(){
+  function safeText(t){ return (t===null || t===undefined) ? '' : String(t); }
+  function nl(s){ return safeText(s).replace(/\\n/g,'\n'); }
+  function applyTpl(t, ctx){
+    try{ if(typeof window.applyTemplate === 'function') return window.applyTemplate(t, ctx||{}); }catch(e){}
+    return safeText(t);
+  }
+
+  function clearRecapUI(){
+    try{ var recapListEl = document.getElementById('recapList'); if(recapListEl) recapListEl.innerHTML = ''; }catch(e){}
+  }
+
+  function sync(){
+    try{ window.__quiz_history__ = history; }catch(e){}
+    try{ window.__quiz_questionOrder__ = questionOrder; }catch(e){}
+  }
+
+  function renderRecap(){
+    var recapEl = document.getElementById('recap');
+    var recapListEl = document.getElementById('recapList');
+    if(!recapEl || !recapListEl) return;
+    recapEl.style.display = 'block';
+    recapListEl.innerHTML = '';
+
+    var h = window.__quiz_history__;
+    var order = window.__quiz_questionOrder__;
+    var items = [];
+
+    if(Array.isArray(order) && order.length){
+      for(var qi=0; qi<order.length; qi++){
+        var di = order[qi];
+        var entry = (h && h[di]) ? h[di] : (h && h[qi] ? h[qi] : null);
+        if(entry) items.push({q: qi+1, h: entry});
+      }
+    }
+
+    if(!items.length){
+      var d0=document.createElement('div');
+      d0.className='recap-item';
+      d0.innerHTML='<div class="q-label">No answers yet</div><div class="prompt">Answer questions to populate the recap.</div>';
+      recapListEl.appendChild(d0);
+      return;
+    }
+
+    for(var i2=0;i2<items.length;i2++){
+      var qnum=items[i2].q;
+      var hh=items[i2].h||{};
+      var ctx=hh.ctx||window.__QUIZ_CTX||{};
+      var promptDisp = nl(applyTpl(hh.promptValue, ctx));
+      var chosenDisp = nl(applyTpl(hh.chosen==null?'—':hh.chosen, ctx));
+      var correctDisp = nl(applyTpl(hh.correct==null?'':hh.correct, ctx));
+
+      var div=document.createElement('div');
+      div.className='recap-item';
+      div.innerHTML = '<div class="q-label">Q'+qnum+' – '+safeText(hh.uiLabel)+'</div>'
+        + '<div class="prompt">'+promptDisp+'</div>'
+        + '<div class="answer-line">'
+        + '<span class="'+(hh.isCorrect?'tag-correct':'tag-incorrect')+'">Your answer: '+chosenDisp+'</span>'
+        + '<span class="tag-neutral">Correct: '+correctDisp+'</span>'
+        + '</div>';
+      recapListEl.appendChild(div);
+    }
+  }
+
+  function wrap(){
+    try{
+      // Patch loadQuestion to reuse previous options when revisiting
+      if(typeof window.loadQuestion === 'function' && !window.__wrapLoadOptions){
+        var _l = window.loadQuestion;
+        window.loadQuestion = function(answerField, promptFields, numOptions, texts){
+          var r = _l.apply(this, arguments);
+          try{
+            var dataIndex = questionOrder[currentIndex];
+            if(history && history[dataIndex] && Array.isArray(history[dataIndex].options) && history[dataIndex].options.length){
+              var correct = history[dataIndex].correct;
+              var uiLabel = history[dataIndex].uiLabel;
+              var promptValue = history[dataIndex].promptValue;
+              var options = history[dataIndex].options;
+              var optionsContainer = document.getElementById('optionsContainer');
+              if(optionsContainer){
+                optionsContainer.innerHTML = '';
+                options.forEach(function(opt){
+                  var btn = document.createElement('button');
+                  btn.className = 'option-btn';
+                  btn.innerHTML = '<span class="label">'+opt+'</span>';
+                  btn.addEventListener('click', function(){ window.handleClick(opt, correct, uiLabel, promptValue, options); });
+                  optionsContainer.appendChild(btn);
+                });
+              }
+            }
+          }catch(e){}
+          sync();
+          renderRecap();
+          return r;
+        };
+        window.__wrapLoadOptions = true;
+      }
+
+      if(typeof window.startQuiz === 'function' && !window.__wrapStartRecap){
+        var s=window.startQuiz;
+        window.startQuiz=function(){
+          clearRecapUI();
+          try{ window.__quiz_history__ = []; window.__quiz_questionOrder__ = []; }catch(e){}
+          var r=s.apply(this, arguments);
+          sync();
+          renderRecap();
+          return r;
+        };
+        window.__wrapStartRecap=true;
+      }
+
+      if(typeof window.handleClick === 'function' && !window.__wrapClickRecap){
+        var c=window.handleClick;
+        window.handleClick=function(){
+          var r=c.apply(this, arguments);
+          sync();
+          renderRecap();
+          return r;
+        };
+        window.__wrapClickRecap=true;
+      }
+
+      var rb = document.getElementById('restartBtn');
+      if(rb && !window.__wrapRestartClear){
+        rb.addEventListener('click', function(){
+          try{ window.__quiz_history__ = []; window.__quiz_questionOrder__ = []; }catch(e){}
+          clearRecapUI();
+        });
+        window.__wrapRestartClear = true;
+      }
+
+      sync();
+      renderRecap();
+    }catch(e){}
+  }
+
+  wrap();
+  setTimeout(wrap, 0);
+  setTimeout(wrap, 50);
+})();
+</script>
+
+<!-- MENU_OVERLAY_CONTROLLER (menu box text spacing + empty menu info) -->
+<script>
+(function(){
+  function nl(s){ return (s==null? '' : String(s)).replace(/\\n/g,'\n'); }
+  function applyTpl(t, ctx){
+    try{ if(typeof window.applyTemplate === 'function') return window.applyTemplate(t, ctx||{}); }catch(e){}
+    return (t==null? '' : String(t));
+  }
+
+  function initMenu(){
+    try{
+      var overlay = document.getElementById('menuOverlay');
+      var quizUI = document.getElementById('quizUI');
+      var startBtn = document.getElementById('startQuizBtn');
+      var menuBtn = document.getElementById('menuBtn');
+      var restartBtn = document.getElementById('restartBtn');
+      var card = document.querySelector('.quiz-card');
+
+      var menuTitle = document.getElementById('menuTitle');
+      var menuSubtitle = document.getElementById('menuSubtitle');
+      var menuInfo = document.getElementById('menuInfo');
+
+      if(!overlay || !quizUI || !startBtn) return;
+
+      function showOverlay(){
+        overlay.style.display='flex';
+        quizUI.style.display='none';
+        if(card) card.classList.add('menu-open');
+      }
+      function hideOverlay(){
+        overlay.style.display='none';
+        quizUI.style.display='block';
+        if(card) card.classList.remove('menu-open');
+      }
+
+      // Fill menu texts from QUIZ_CONFIG.text when available
+      try{
+        var t = (typeof QUIZ_CONFIG !== 'undefined' && QUIZ_CONFIG.text && QUIZ_CONFIG.text.title) ? QUIZ_CONFIG.text.title : (menuTitle ? menuTitle.textContent : '');
+        var st = (typeof QUIZ_CONFIG !== 'undefined' && QUIZ_CONFIG.text && QUIZ_CONFIG.text.subtitle) ? QUIZ_CONFIG.text.subtitle : (menuSubtitle ? menuSubtitle.textContent : '');
+        var info = (typeof QUIZ_CONFIG !== 'undefined' && QUIZ_CONFIG.text && QUIZ_CONFIG.text.menu_info) ? QUIZ_CONFIG.text.menu_info : '';
+        var startLabel = (typeof QUIZ_CONFIG !== 'undefined' && QUIZ_CONFIG.text && QUIZ_CONFIG.text.start_button) ? QUIZ_CONFIG.text.start_button : 'Start quiz';
+        var menuLabel = (typeof QUIZ_CONFIG !== 'undefined' && QUIZ_CONFIG.text && QUIZ_CONFIG.text.menu_button) ? QUIZ_CONFIG.text.menu_button : 'Back to menu';
+
+        if(menuTitle) menuTitle.textContent = nl(t);
+        if(menuSubtitle) menuSubtitle.textContent = nl(st);
+
+        var ctx = {};
+        try{
+          ctx = Object.assign({}, window.__QUIZ_CTX||{}, {
+            total: (typeof QUIZ_CONFIG !== 'undefined' && QUIZ_CONFIG.settings && QUIZ_CONFIG.settings.num_questions) ? QUIZ_CONFIG.settings.num_questions : (typeof DATA !== 'undefined' && Array.isArray(DATA) ? DATA.length : 0),
+            options: (typeof QUIZ_CONFIG !== 'undefined' && QUIZ_CONFIG.settings && QUIZ_CONFIG.settings.num_options) ? QUIZ_CONFIG.settings.num_options : 3
+          });
+        }catch(e){}
+
+        if(menuInfo){
+          var out = nl(applyTpl(info, ctx));
+          menuInfo.textContent = out;
+          var empty = !out.trim();
+          menuInfo.classList.toggle('is-empty', empty);
+          menuInfo.style.display = empty ? 'none' : 'block';
+        }
+
+        startBtn.textContent = startLabel;
+        if(menuBtn) menuBtn.textContent = menuLabel;
+      }catch(e){}
+
+      startBtn.addEventListener('click', function(){
+        try{ if(restartBtn) restartBtn.click(); }catch(e){}
+        hideOverlay();
+      });
+
+      if(menuBtn){
+        menuBtn.addEventListener('click', function(){
+          try{ if(restartBtn) restartBtn.click(); }catch(e){}
+          showOverlay();
+        });
+      }
+
+      showOverlay();
+    }catch(e){}
+  }
+
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initMenu);
+  else initMenu();
+})();
+</script>
+
+
+
+<!-- BOXBG_CHECK: apply CSS fallback ONLY if Box Background.png cannot be loaded -->
+<script>
+(function(){
+  try{
+    var overlay = document.getElementById('menuOverlay');
+    if(!overlay) return;
+    var img = new Image();
+    img.onload = function(){ /* keep normal styling */ };
+    img.onerror = function(){ overlay.classList.add('fallback'); };
+    img.src = 'Box Background.png';
+  }catch(e){}
+})();
+</script>
+
+
+<script>
+(function(){
+  try {
+    if (typeof QUIZ_CONFIG === "undefined" || !QUIZ_CONFIG.text) return;
+    var t = QUIZ_CONFIG.text.title || "";
+    var st = QUIZ_CONFIG.text.subtitle || "";
+    var elTitle = document.querySelector(".title") || document.querySelector("h1");
+    if (elTitle && t) elTitle.textContent = t;
+    var elSub = document.querySelector(".subtitle");
+    if (elSub && st) elSub.textContent = st;
+  } catch(e) {}
+})();
+</script>
+
+<script>
+(function(){
+  try {
+    if (typeof DATA === "undefined" || !Array.isArray(DATA)) return;
+    var ANSWER_KEY = "english";
+    if (!ANSWER_KEY) return;
+    DATA = DATA.map(function(r){
+      if (!r || typeof r !== "object") return r;
+      if (typeof r.term === "undefined") r.term = r[ANSWER_KEY];
+      return r;
+    });
+  } catch(e) {}
+})();
+</script>
+
+<script>
+// =========================================================
+// Helper: hide answer inside prompt by replacing characters with underscores
+// =========================================================
+function maskAnswerInText(text, answer){
+  try{
+    text = (text===null || text===undefined) ? '' : String(text);
+    answer = (answer===null || answer===undefined) ? '' : String(answer);
+    var a = answer.trim();
+    if(!a) return text;
+    var esc = a.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    var re = new RegExp(esc, 'gi');
+    return text.replace(re, function(m){
+      return m.replace(/\S/g, '_');
+    });
+  }catch(e){
+    return (text===null || text===undefined) ? '' : String(text);
+  }
+}
+</script>
+</body>
+</html>
